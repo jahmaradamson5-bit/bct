@@ -1,70 +1,57 @@
 import asyncio
 import json
 import logging
-import websockets
+import httpx
 from typing import Optional
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
 class BinanceWebSocketService:
-    """Service for real-time Bitcoin price from Binance WebSocket"""
+    """Service for real-time Bitcoin price from Binance REST API (Fallback)"""
     
     def __init__(self):
-        self.uri = "wss://stream.binance.com:9443/ws/btcusdt@trade"
-        self.websocket = None
+        self.api_url = "https://api.binance.com/api/v3/ticker/price"
+        self.symbol = "BTCUSDT"
+        self.client = httpx.AsyncClient(timeout=10.0)
         self.latest_price: Optional[float] = None
         self.last_update: Optional[datetime] = None
         self.connected = False
+        self.polling_task = None
     
     async def connect(self):
-        """Connect to Binance WebSocket with auto-reconnect"""
-        reconnect_delay = 1
-        max_reconnect_delay = 60
+        """Start polling Binance REST API for price updates"""
+        self.connected = True
+        logger.info("Starting Binance price polling service")
         
-        while True:
+        while self.connected:
             try:
-                logger.info(f"Connecting to Binance WebSocket: {self.uri}")
-                self.websocket = await websockets.connect(self.uri)
-                self.connected = True
-                logger.info("Binance WebSocket connected")
-                
-                reconnect_delay = 1  # Reset on successful connection
-                
-                # Listen for messages
-                await self._listen()
-                
+                await self._fetch_price()
+                await asyncio.sleep(2)  # Poll every 2 seconds
             except Exception as e:
-                self.connected = False
-                logger.error(f"Binance WebSocket error: {e}")
-                await asyncio.sleep(reconnect_delay)
-                reconnect_delay = min(reconnect_delay * 2, max_reconnect_delay)
+                logger.error(f"Error fetching Binance price: {e}")
+                await asyncio.sleep(5)
     
-    async def _listen(self):
-        """Listen for incoming price updates"""
+    async def _fetch_price(self):
+        """Fetch current Bitcoin price from Binance REST API"""
         try:
-            async for message in self.websocket:
-                data = json.loads(message)
-                
-                # Binance trade stream format
-                if 'p' in data:  # 'p' is the price field
-                    self.latest_price = float(data['p'])
-                    self.last_update = datetime.now(timezone.utc)
-                    logger.debug(f"BTC Price: ${self.latest_price:.2f}")
-                    
-        except asyncio.CancelledError:
-            logger.info("Binance WebSocket listener cancelled")
-            raise
+            response = await self.client.get(self.api_url, params={"symbol": self.symbol})
+            response.raise_for_status()
+            data = response.json()
+            
+            self.latest_price = float(data['price'])
+            self.last_update = datetime.now(timezone.utc)
+            logger.debug(f"BTC Price: ${self.latest_price:.2f}")
+            
         except Exception as e:
-            logger.error(f"Error in Binance WebSocket listener: {e}")
+            logger.error(f"Error in Binance price fetch: {e}")
     
     def get_latest_price(self) -> Optional[float]:
         """Get the most recent Bitcoin price"""
         return self.latest_price
     
     async def disconnect(self):
-        """Close WebSocket connection"""
+        """Stop polling"""
         self.connected = False
-        if self.websocket:
-            await self.websocket.close()
-            logger.info("Binance WebSocket disconnected")
+        await self.client.aclose()
+        logger.info("Binance price service stopped")
