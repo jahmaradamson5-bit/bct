@@ -299,6 +299,63 @@ export default function WalletTracker() {
                 </div>
               </Card>
 
+              {/* Performance Metrics */}
+              <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
+                <div className="p-4 border-b border-[#E4E4E7] flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-lg font-['Manrope'] font-semibold">Performance Metrics</h3>
+                </div>
+                <div className="p-4">
+                  <PerformanceMetrics metrics={chartData.metrics} />
+                </div>
+              </Card>
+
+              {/* Charts Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* PNL Over Time */}
+                <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
+                  <div className="p-4 border-b border-[#E4E4E7]">
+                    <h3 className="text-sm font-['Manrope'] font-semibold">PNL Over Time (24h)</h3>
+                  </div>
+                  <div className="p-4">
+                    <PnLChart data={chartData.pnlHistory} />
+                  </div>
+                </Card>
+
+                {/* Position Distribution */}
+                <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
+                  <div className="p-4 border-b border-[#E4E4E7]">
+                    <h3 className="text-sm font-['Manrope'] font-semibold">Position Distribution</h3>
+                  </div>
+                  <div className="p-4">
+                    {chartData.distribution.length > 0 ? (
+                      <PositionDistribution data={chartData.distribution} />
+                    ) : (
+                      <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
+                        No position data available
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+
+              {/* Buy vs Sell Comparison */}
+              <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
+                <div className="p-4 border-b border-[#E4E4E7]">
+                  <h3 className="text-sm font-['Manrope'] font-semibold">Buy vs Sell by Market Type</h3>
+                </div>
+                <div className="p-4">
+                  {chartData.buySell.length > 0 ? (
+                    <BuySellComparison data={chartData.buySell} />
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
+                      No comparison data available
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+
               {/* Positions Tabs */}
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                 <Tabs defaultValue="buying" className="w-full">
