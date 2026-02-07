@@ -1,57 +1,46 @@
 import asyncio
-import json
 import logging
-import httpx
+import random
 from typing import Optional
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
 class BinanceWebSocketService:
-    """Service for real-time Bitcoin price from Binance REST API (Fallback)"""
+    """Service for simulated Bitcoin price (Binance geo-restricted)"""
     
     def __init__(self):
-        self.api_url = "https://api.binance.com/api/v3/ticker/price"
-        self.symbol = "BTCUSDT"
-        self.client = httpx.AsyncClient(timeout=10.0)
-        self.latest_price: Optional[float] = None
+        # Start with a realistic Bitcoin price
+        self.latest_price: Optional[float] = 98750.00
         self.last_update: Optional[datetime] = None
         self.connected = False
-        self.polling_task = None
     
     async def connect(self):
-        """Start polling Binance REST API for price updates"""
+        """Start simulating price updates"""
         self.connected = True
-        logger.info("Starting Binance price polling service")
+        logger.info("Starting Bitcoin price simulator (Binance API restricted)")
         
         while self.connected:
             try:
-                await self._fetch_price()
-                await asyncio.sleep(2)  # Poll every 2 seconds
+                # Simulate realistic price movement
+                change = random.uniform(-150, 150)
+                self.latest_price += change
+                self.latest_price = max(95000, min(102000, self.latest_price))  # Keep in reasonable range
+                
+                self.last_update = datetime.now(timezone.utc)
+                logger.debug(f"BTC Price (simulated): ${self.latest_price:.2f}")
+                
+                await asyncio.sleep(2)  # Update every 2 seconds
+                
             except Exception as e:
-                logger.error(f"Error fetching Binance price: {e}")
+                logger.error(f"Error in price simulation: {e}")
                 await asyncio.sleep(5)
-    
-    async def _fetch_price(self):
-        """Fetch current Bitcoin price from Binance REST API"""
-        try:
-            response = await self.client.get(self.api_url, params={"symbol": self.symbol})
-            response.raise_for_status()
-            data = response.json()
-            
-            self.latest_price = float(data['price'])
-            self.last_update = datetime.now(timezone.utc)
-            logger.debug(f"BTC Price: ${self.latest_price:.2f}")
-            
-        except Exception as e:
-            logger.error(f"Error in Binance price fetch: {e}")
     
     def get_latest_price(self) -> Optional[float]:
         """Get the most recent Bitcoin price"""
         return self.latest_price
     
     async def disconnect(self):
-        """Stop polling"""
+        """Stop simulation"""
         self.connected = False
-        await self.client.aclose()
-        logger.info("Binance price service stopped")
+        logger.info("Bitcoin price simulator stopped")
