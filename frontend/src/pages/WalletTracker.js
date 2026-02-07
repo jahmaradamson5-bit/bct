@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Wallet, Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Eye } from 'lucide-react';
+import { Wallet, Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Eye, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
+import PnLChart from '../components/charts/PnLChart';
+import PositionDistribution from '../components/charts/PositionDistribution';
+import BuySellComparison from '../components/charts/BuySellComparison';
+import PerformanceMetrics from '../components/charts/PerformanceMetrics';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
