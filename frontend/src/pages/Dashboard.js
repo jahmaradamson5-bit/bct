@@ -256,11 +256,11 @@ export default function Dashboard() {
                     <p className="text-sm">No signals yet. Generate your first signal.</p>
                   </div>
                 ) : (
-                  signals.map((signal, index) => (
+                  signals.map((signal) => (
                     <div
-                      key={signal.id || index}
+                      key={signal.id}
                       className="bg-blue-50/50 border-l-4 border-blue-600 p-4 rounded-sm hover:bg-blue-50 transition-colors"
-                      data-testid={`signal-card-${index}`}
+                      data-testid={`signal-card-${signal.id}`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
