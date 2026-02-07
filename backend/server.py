@@ -210,6 +210,130 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+
+# Trading Account Management
+class AccountConnection(BaseModel):
+    private_key: str
+    proxy_address: str
+    signature_type: int = 0
+
+@api_router.post("/trading/connect")
+async def connect_trading_account(connection: AccountConnection):
+    if not trading_service:
+        raise HTTPException(status_code=503, detail="Trading service not initialized")
+    
+    result = await trading_service.connect_account(
+        connection.private_key,
+        connection.proxy_address,
+        connection.signature_type
+    )
+    return result
+
+@api_router.get("/trading/status")
+async def get_trading_status():
+    if not trading_service:
+        raise HTTPException(status_code=503, detail="Trading service not initialized")
+    
+    return {
+        "connected": trading_service.is_connected(),
+        "address": trading_service.user_address if trading_service.is_connected() else None
+    }
+
+# Order Placement
+class MarketOrderRequest(BaseModel):
+    token_id: str
+    side: str  # BUY or SELL
+    size: float
+
+class LimitOrderRequest(BaseModel):
+    token_id: str
+    side: str
+    price: float
+    size: float
+
+@api_router.post("/trading/order/market")
+async def place_market_order(order: MarketOrderRequest):
+    if not trading_service:
+        raise HTTPException(status_code=503, detail="Trading service not initialized")
+    
+    if not trading_service.is_connected():
+        raise HTTPException(status_code=400, detail="Account not connected")
+    
+    result = await trading_service.place_market_order(
+        order.token_id,
+        order.side,
+        order.size
+    )
+    
+    if result.get('success'):
+        # Broadcast trade to all clients
+        await sio.emit('new_trade', result)
+    
+    return result
+
+@api_router.post("/trading/order/limit")
+async def place_limit_order(order: LimitOrderRequest):
+    if not trading_service:
+        raise HTTPException(status_code=503, detail="Trading service not initialized")
+    
+    if not trading_service.is_connected():
+        raise HTTPException(status_code=400, detail="Account not connected")
+    
+    result = await trading_service.place_limit_order(
+        order.token_id,
+        order.side,
+        order.price,
+        order.size
+    )
+    
+    if result.get('success'):
+        await sio.emit('new_trade', result)
+    
+    return result
+
+@api_router.get("/trading/orders")
+async def get_open_orders():
+    if not trading_service or not trading_service.is_connected():
+        return []
+    
+    return await trading_service.get_open_orders()
+
+@api_router.delete("/trading/orders/{order_id}")
+async def cancel_order(order_id: str):
+    if not trading_service:
+        raise HTTPException(status_code=503, detail="Trading service not initialized")
+    
+    return await trading_service.cancel_order(order_id)
+
+@api_router.get("/trading/positions")
+async def get_account_positions():
+    if not trading_service or not trading_service.is_connected():
+        return []
+    
+    return await trading_service.get_account_positions()
+
+@api_router.get("/trading/history")
+async def get_trade_history(limit: int = 100):
+    if not trading_service or not trading_service.is_connected():
+        return []
+    
+    return await trading_service.get_trade_history(limit)
+
+# Enhanced Wallet Tracking
+@api_router.get("/wallets/{address}/detailed")
+async def get_wallet_detailed_positions(address: str):
+    if not wallet_tracking_service:
+        raise HTTPException(status_code=503, detail="Wallet tracking service not initialized")
+    
+    return await wallet_tracking_service.get_wallet_detailed_positions(address)
+
+@api_router.get("/wallets/{address}/activity-feed")
+async def get_wallet_activity_feed(address: str, limit: int = 50):
+    if not wallet_tracking_service:
+        raise HTTPException(status_code=503, detail="Wallet tracking service not initialized")
+    
+    return await wallet_tracking_service.get_wallet_activity_feed(address, limit)
+
     allow_methods=["*"],
     allow_headers=["*"],
 )
