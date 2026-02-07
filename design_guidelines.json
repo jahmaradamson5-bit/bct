@@ -1,0 +1,142 @@
+{
+  "identity": {
+    "persona": "E1 - The Anti-AI Designer",
+    "theme": "Clinical Swiss Lab (High Frequency Trading)",
+    "description": "A high-precision, dense, and starkly objective interface. No gradients, no fluff. Information is the aesthetic. White background, black text, sharp borders.",
+    "emotional_tone": "Precision, Urgency, Clarity, Institutional Authority"
+  },
+  "typography": {
+    "headings": {
+      "family": "Manrope",
+      "weights": ["600", "800"],
+      "usage": "Page titles, big metric values. Use tight tracking."
+    },
+    "body": {
+      "family": "Inter",
+      "usage": "General labels, narrative text."
+    },
+    "data": {
+      "family": "JetBrains Mono",
+      "usage": "Price feeds, wallet addresses, PNL, timestamp logs. CRITICAL for financial trust."
+    },
+    "scale": {
+      "huge": "text-5xl tracking-tighter font-extrabold",
+      "h1": "text-3xl tracking-tight font-bold",
+      "h2": "text-xl tracking-tight font-semibold",
+      "body": "text-sm text-gray-600",
+      "mono": "text-xs font-mono text-gray-500",
+      "label": "text-[10px] uppercase tracking-widest text-gray-400 font-bold"
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": "#FAFAFA",
+      "surface": "#FFFFFF",
+      "border": "#E4E4E7",
+      "text_primary": "#09090B",
+      "text_secondary": "#71717A",
+      "primary_action": "#09090B",
+      "accent_signal": "#2563EB",
+      "success": "#10B981",
+      "danger": "#EF4444",
+      "warning": "#F59E0B"
+    },
+    "usage_rules": [
+      "NO GRADIENTS allowed on backgrounds.",
+      "Use 'Signal Blue' (#2563EB) sparingly for active states or new alerts.",
+      "Green/Red only for financial vectors (Up/Down, Buy/Sell).",
+      "Black buttons for primary actions."
+    ]
+  },
+  "layout": {
+    "grid_system": "Bento Mode B (High Density)",
+    "spacing": {
+      "container_padding": "p-4 md:p-6",
+      "item_gap": "gap-4",
+      "internal_padding": "p-4"
+    },
+    "structure": [
+      "Header: Minimal, sticky, glassmorphism (white/80).",
+      "Hero: Split view (Real-time Price vs Polymarket Price).",
+      "Grid: Dense 3-column layout for Wallet Tracker, Signals, and Feed.",
+      "Footer: Simple minimal text."
+    ]
+  },
+  "components": {
+    "style_overrides": {
+      "radius": "rounded-sm",
+      "shadows": "shadow-sm",
+      "borders": "border border-border"
+    },
+    "specific_components": [
+      {
+        "name": "PriceTicker",
+        "description": "Large split display showing Binance Price vs Polymarket Price with a calculated 'Lag/Delta' indicator in the middle.",
+        "style": "bg-white border-b-2 border-black"
+      },
+      {
+        "name": "SignalCard",
+        "description": "AI prediction card. Minimalist. Uses 'Brain' icon or abstract texture.",
+        "style": "bg-blue-50/50 border-l-4 border-blue-600"
+      },
+      {
+        "name": "WalletRow",
+        "description": "Compact row for wallet tracking. Mono font for address.",
+        "style": "hover:bg-gray-50 transition-colors cursor-pointer border-b last:border-0"
+      }
+    ],
+    "shadcn_customization": "Use 'slate' gray scale. Override rounded-xl to rounded-sm in standard components."
+  },
+  "assets": {
+    "icons": {
+      "library": "lucide-react",
+      "preferred": ["Activity", "Zap", "Wallet", "ArrowUpRight", "ArrowDownRight", "Brain", "Terminal"]
+    },
+    "images": [
+      {
+        "category": "branding_hero",
+        "url": "https://images.unsplash.com/photo-1667808929864-a05cca44732f",
+        "description": "Clean gold bitcoin on white, use for header logo or empty state"
+      },
+      {
+        "category": "ai_texture",
+        "url": "https://images.unsplash.com/photo-1755134148217-2dd89cc6a2c2",
+        "description": "Abstract flow, use as low-opacity overlay for AI Signal panel background"
+      }
+    ]
+  },
+  "motion": {
+    "philosophy": "Micro-interactions only. Speed is key.",
+    "rules": [
+      "No slow fades.",
+      "Use 'layout' prop in Framer Motion for list reordering.",
+      "Price updates should flash background color (Green/Red) briefly."
+    ]
+  },
+  "universal_guidelines": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use sonner for toasts"
+  ],
+  "instructions_to_main_agent": [
+    "1. INSTALL FONTS: Add '@fontsource/manrope', '@fontsource/inter', '@fontsource/jetbrains-mono' via yarn.",
+    "2. SETUP TAILWIND: Update font families in tailwind.config.js to match typography guidelines.",
+    "3. OVERRIDE RADIUS: Set default border radius to 2px or 4px (sm) for a sharper, technical look.",
+    "4. DASHBOARD LAYOUT: Create a high-density grid. Do not center content. Use full width with padding.",
+    "5. REAL-TIME DATA: Ensure price components can handle rapid updates without layout shifts (fix widths for numbers).",
+    "6. AI SIGNALS: Make them distinct. Use the 'Signal Blue' accent to highlight high-probability opportunities."
+  ]
+}
