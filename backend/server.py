@@ -407,6 +407,10 @@ async def startup():
 async def shutdown_db_client():
     if binance_service:
         await binance_service.disconnect()
+    if trading_service:
+        await trading_service.close()
+    if wallet_tracking_service:
+        await wallet_tracking_service.close()
     client.close()
 
 # Wrap FastAPI with Socket.IO
