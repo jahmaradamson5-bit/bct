@@ -23,6 +23,78 @@ export default function WalletTracker() {
   const [newWalletLabel, setNewWalletLabel] = useState('');
   const [loading, setLoading] = useState(false);
 
+
+  // Generate chart data from wallet details
+  const generateChartData = () => {
+    if (!walletDetails) return { pnlHistory: [], distribution: [], buySell: [], metrics: {} };
+
+    // PNL history (simulated time series)
+    const pnlHistory = [];
+    const baseTime = Date.now();
+    for (let i = 0; i < 24; i++) {
+      const time = new Date(baseTime - (23 - i) * 3600000);
+      const pnl = walletDetails.total_pnl * (0.5 + (i / 24) * 0.5) + Math.random() * 5 - 2.5;
+      pnlHistory.push({
+        time: `${time.getHours()}:00`,
+        pnl: parseFloat(pnl.toFixed(2))
+      });
+    }
+
+    // Position distribution by market
+    const distribution = [];
+    walletDetails.buying_positions?.forEach((pos, idx) => {
+      if (idx < 5) {  // Top 5 positions
+        distribution.push({
+          name: pos.market?.substring(0, 20) || `Position ${idx + 1}`,
+          value: Math.abs(pos.current_value || 0)
+        });
+      }
+    });
+    walletDetails.selling_positions?.forEach((pos, idx) => {
+      if (idx < 5) {
+        distribution.push({
+          name: pos.market?.substring(0, 20) || `Position ${idx + 1}`,
+          value: Math.abs(pos.current_value || 0)
+        });
+      }
+    });
+
+    // Buy vs Sell comparison by market type
+    const markets = {};
+    walletDetails.buying_positions?.forEach(pos => {
+      const marketType = pos.market?.split(' ')[0] || 'Other';
+      if (!markets[marketType]) markets[marketType] = { name: marketType, buy: 0, sell: 0 };
+      markets[marketType].buy += Math.abs(pos.current_value || 0);
+    });
+    walletDetails.selling_positions?.forEach(pos => {
+      const marketType = pos.market?.split(' ')[0] || 'Other';
+      if (!markets[marketType]) markets[marketType] = { name: marketType, buy: 0, sell: 0 };
+      markets[marketType].sell += Math.abs(pos.current_value || 0);
+    });
+    const buySell = Object.values(markets).slice(0, 5);
+
+    // Performance metrics
+    const totalPositions = walletDetails.total_positions || 0;
+    const winningPositions = [...(walletDetails.buying_positions || []), ...(walletDetails.selling_positions || [])]
+      .filter(p => (p.unrealized_pnl || 0) > 0).length;
+    
+    const metrics = {
+      totalValue: walletDetails.total_value || 0,
+      totalPnl: walletDetails.total_pnl || 0,
+      winRate: totalPositions > 0 ? (winningPositions / totalPositions) * 100 : 0,
+      avgReturn: walletDetails.total_value > 0 ? ((walletDetails.total_pnl / walletDetails.total_value) * 100) : 0,
+      totalTrades: totalPositions,
+      bestTrade: Math.max(...[...(walletDetails.buying_positions || []), ...(walletDetails.selling_positions || [])]
+        .map(p => p.unrealized_pnl || 0), 0),
+      worstTrade: Math.min(...[...(walletDetails.buying_positions || []), ...(walletDetails.selling_positions || [])]
+        .map(p => p.unrealized_pnl || 0), 0)
+    };
+
+    return { pnlHistory, distribution, buySell, metrics };
+  };
+
+  const chartData = generateChartData();
+
   useEffect(() => {
     fetchWallets();
   }, []);
