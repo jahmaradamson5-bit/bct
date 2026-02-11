@@ -239,14 +239,15 @@ export default function Dashboard() {
                     <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p className="text-sm">No signals yet. Generate your first signal.</p>
                   </div>
-                ) : (
+            ) : (
+) : (
           <div key={signal.id} className="mb-4">
-            {/* 1. Logic is now wrapped in a div so it doesn't crash the build */}
+            {/* 1. Price logic container */}
             <div className="text-xs font-medium text-gray-500 mb-1">
               {priceDelta > 0 ? '+' : ''}{(priceDelta || 0).toFixed(2)}
             </div>
 
-            {/* 2. Your original Signal Card */}
+            {/* 2. Main Signal Card */}
             <div 
               className="bg-blue-50/50 border-l-4 border-blue-600 p-4 rounded-sm hover:bg-blue-50 transition-colors"
               data-testid={signal-card-${signal.id}}
@@ -265,12 +266,65 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
-              {/* Ensure any other inner content of your card stays here */}
+              
+              <div className="text-sm text-gray-600">
+                {signal.message || 'Processing live market data...'}
+              </div>
+            </div>
+          </div>
+        )}          
+          
+            
+              
+          
+
+          
+            
+        
+
+            >
+      
+                
+          
+                    
+              
+              
+                  
+                  
+                  
+                  
+                    {signal.signal_type}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                {signal.message || 'No additional details available.'}
+              </div>
             </div>
           </div>
         )}
+        
+            
+    
+  
+                  
+                    
               
-                    <div
+                    
+            
+                  
+                  
+                
+                  
+                
+              
+              
+              
+          
+    
+              
+                    
                       key={signal.id}
                       className="bg-blue-50/50 border-l-4 border-blue-600 p-4 rounded-sm hover:bg-blue-50 transition-colors"
                       data-testid={`signal-card-${signal.id}`}
