@@ -185,7 +185,7 @@ export default function Dashboard() {
                 <div className={`text-4xl font-['Manrope'] font-extrabold tracking-tight ${
                   priceDelta > 0 ? 'text-[#10B981]' : priceDelta < 0 ? 'text-[#EF4444]' : 'text-gray-900'
                 }`}>
-                  {priceDelta > 0 ? '+' : ''}{priceDelta.toFixed(2)}
+                  priceDelta > 0 ? '+' : ''}{(priceDelta || 0).toFixed(2)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1 font-mono">Opportunity Window</div>
               </div>
