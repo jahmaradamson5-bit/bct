@@ -240,7 +240,7 @@ export default function Dashboard() {
                     <p className="text-sm">No signals yet. Generate your first signal.</p>
                   </div>
                 ) : (
-                  priceDelta > 0 ? '+' : ''}{(priceDelta || 0).toFixed(2)}
+                priceDelta > 0 ? '+' : ''}{(priceDelta || 0).toFixed(2)}
                     <div
                       key={signal.id}
                       className="bg-blue-50/50 border-l-4 border-blue-600 p-4 rounded-sm hover:bg-blue-50 transition-colors"
