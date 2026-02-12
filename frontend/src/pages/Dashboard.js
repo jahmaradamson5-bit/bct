@@ -7,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { toast } from 'sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND_URL}/api`;
 const SOCKET_PATH = '/api/socket.io';
 
@@ -55,8 +55,10 @@ export default function Dashboard() {
     });
 
     socketRef.current.on('new_signal', (signal) => {
-      setSignals(prev => [signal, ...(Array.isArray(prev) ? prev : [])].slice(0, 20));
-      toast.success('New trading signal generated!');
+      if (signal && typeof signal === 'object') {
+        setSignals(prev => [signal, ...(Array.isArray(prev) ? prev : [])].slice(0, 20));
+        toast.success('New trading signal generated!');
+      }
     });
 
     return () => {
@@ -85,10 +87,20 @@ export default function Dashboard() {
     }
   };
 
+  const toSafeArray = (data) => {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      // Handle common nested shapes: { wallets: [...] }, { signals: [...] }, { data: [...] }, { results: [...] }
+      const nested = data.wallets || data.signals || data.data || data.results;
+      if (Array.isArray(nested)) return nested;
+    }
+    return [];
+  };
+
   const fetchWallets = async () => {
     try {
       const response = await axios.get(`${API}/wallets`);
-      setWallets(Array.isArray(response.data) ? response.data : []);
+      setWallets(toSafeArray(response.data));
     } catch (error) {
       console.error('Error fetching wallets:', error);
       setWallets([]);
@@ -98,7 +110,7 @@ export default function Dashboard() {
   const fetchSignals = async () => {
     try {
       const response = await axios.get(`${API}/signals`);
-      setSignals(Array.isArray(response.data) ? response.data : []);
+      setSignals(toSafeArray(response.data));
     } catch (error) {
       console.error('Error fetching signals:', error);
       setSignals([]);
@@ -270,7 +282,7 @@ export default function Dashboard() {
                         <div className="text-right">
                           <div className="text-xs text-gray-400 font-mono">CONFIDENCE</div>
                           <div className="text-sm font-bold font-['JetBrains_Mono']">
-                            {(signal.confidence * 100).toFixed(0)}%
+                            {signal.confidence != null ? (signal.confidence * 100).toFixed(0) : '--'}%
                           </div>
                         </div>
                       </div>
@@ -278,15 +290,15 @@ export default function Dashboard() {
                       <div className="grid grid-cols-3 gap-2 text-xs font-mono text-gray-500">
                         <div>
                           <span className="text-[10px] uppercase tracking-wider text-gray-400">Binance</span>
-                          <div className="font-semibold">${signal.binance_price?.toFixed(2)}</div>
+                          <div className="font-semibold">${signal.binance_price != null ? signal.binance_price.toFixed(2) : '---'}</div>
                         </div>
                         <div>
                           <span className="text-[10px] uppercase tracking-wider text-gray-400">Polymarket</span>
-                          <div className="font-semibold">{signal.polymarket_price?.toFixed(4)}</div>
+                          <div className="font-semibold">{signal.polymarket_price != null ? signal.polymarket_price.toFixed(4) : '---'}</div>
                         </div>
                         <div>
                           <span className="text-[10px] uppercase tracking-wider text-gray-400">Delta</span>
-                          <div className="font-semibold">{signal.price_delta?.toFixed(2)}</div>
+                          <div className="font-semibold">{signal.price_delta != null ? signal.price_delta.toFixed(2) : '---'}</div>
                         </div>
                       </div>
                     </div>
@@ -379,27 +391,30 @@ export default function Dashboard() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Total Value:</span>
-                        <span className="font-mono font-bold">${walletPositions.total_value?.toFixed(2)}</span>
+                        <span className="font-mono font-bold">${(walletPositions.total_value ?? 0).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Total PNL:</span>
                         <span className={`font-mono font-bold ${
-                          walletPositions.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                          (walletPositions.total_pnl ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {walletPositions.total_pnl >= 0 ? '+' : ''}{walletPositions.total_pnl?.toFixed(2)}
+                          {(walletPositions.total_pnl ?? 0) >= 0 ? '+' : ''}{(walletPositions.total_pnl ?? 0).toFixed(2)}
                         </span>
                       </div>
-                      {(Array.isArray(walletPositions.positions) ? walletPositions.positions : []).map((pos, idx) => (
-                        <div key={idx} className="text-xs border-t border-gray-200 pt-2 mt-2">
-                          <div className="font-semibold">{pos.market}</div>
-                          <div className="flex justify-between mt-1 text-gray-600">
-                            <span>{pos.shares} shares @ {pos.avg_price}</span>
-                            <span className={pos.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {pos.pnl >= 0 ? '+' : ''}{pos.pnl_percent?.toFixed(2)}%
-                            </span>
+                      {(Array.isArray(walletPositions.positions) ? walletPositions.positions : []).map((pos, idx) => {
+                        if (!pos || typeof pos !== 'object') return null;
+                        return (
+                          <div key={idx} className="text-xs border-t border-gray-200 pt-2 mt-2">
+                            <div className="font-semibold">{pos.market ?? 'Unknown'}</div>
+                            <div className="flex justify-between mt-1 text-gray-600">
+                              <span>{pos.shares ?? 0} shares @ {pos.avg_price ?? '—'}</span>
+                              <span className={(pos.pnl ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                {(pos.pnl ?? 0) >= 0 ? '+' : ''}{(pos.pnl_percent ?? 0).toFixed(2)}%
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

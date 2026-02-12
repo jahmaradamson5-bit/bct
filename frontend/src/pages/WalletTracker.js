@@ -11,7 +11,7 @@ import PositionDistribution from '../components/charts/PositionDistribution';
 import BuySellComparison from '../components/charts/BuySellComparison';
 import PerformanceMetrics from '../components/charts/PerformanceMetrics';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND_URL}/api`;
 
 export default function WalletTracker() {
@@ -33,7 +33,7 @@ export default function WalletTracker() {
     const baseTime = Date.now();
     for (let i = 0; i < 24; i++) {
       const time = new Date(baseTime - (23 - i) * 3600000);
-      const pnl = walletDetails.total_pnl * (0.5 + (i / 24) * 0.5) + Math.random() * 5 - 2.5;
+      const pnl = (walletDetails.total_pnl ?? 0) * (0.5 + (i / 24) * 0.5) + Math.random() * 5 - 2.5;
       pnlHistory.push({
         time: `${time.getHours()}:00`,
         pnl: parseFloat(pnl.toFixed(2))
@@ -99,12 +99,22 @@ export default function WalletTracker() {
     fetchWallets();
   }, []);
 
+  const toSafeArray = (data) => {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      const nested = data.wallets || data.signals || data.data || data.results;
+      if (Array.isArray(nested)) return nested;
+    }
+    return [];
+  };
+
   const fetchWallets = async () => {
     try {
       const response = await axios.get(`${API}/wallets`);
-      setWallets(response.data);
+      setWallets(toSafeArray(response.data));
     } catch (error) {
       console.error('Error fetching wallets:', error);
+      setWallets([]);
     }
   };
 
@@ -154,8 +164,8 @@ export default function WalletTracker() {
         axios.get(`${API}/wallets/${wallet.address}/activity-feed`)
       ]);
       
-      setWalletDetails(detailsRes.data);
-      setActivityFeed(activityRes.data);
+      setWalletDetails(detailsRes.data || null);
+      setActivityFeed(toSafeArray(activityRes.data));
     } catch (error) {
       console.error('Error fetching wallet details:', error);
       toast.error('Failed to load wallet details');
@@ -203,7 +213,7 @@ export default function WalletTracker() {
 
               {/* Wallet List */}
               <div className="space-y-2 max-h-[600px] overflow-y-auto" data-testid="wallet-list">
-                {wallets.length === 0 ? (
+                {!Array.isArray(wallets) || wallets.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
                     <Wallet className="w-10 h-10 mx-auto mb-2 opacity-30" />
                     <p className="text-xs">No wallets tracked yet</p>
@@ -274,27 +284,27 @@ export default function WalletTracker() {
                 <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Total Value</div>
-                    <div className="text-2xl font-['Manrope'] font-bold">${walletDetails.total_value?.toFixed(2)}</div>
+                    <div className="text-2xl font-['Manrope'] font-bold">${(walletDetails.total_value ?? 0).toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Total PNL</div>
                     <div className={`text-2xl font-['Manrope'] font-bold ${
-                      walletDetails.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                      (walletDetails.total_pnl ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {walletDetails.total_pnl >= 0 ? '+' : ''}${walletDetails.total_pnl?.toFixed(2)}
+                      {(walletDetails.total_pnl ?? 0) >= 0 ? '+' : ''}${(walletDetails.total_pnl ?? 0).toFixed(2)}
                     </div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Unrealized PNL</div>
                     <div className={`text-xl font-['JetBrains_Mono'] font-semibold ${
-                      walletDetails.unrealized_pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                      (walletDetails.unrealized_pnl ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {walletDetails.unrealized_pnl >= 0 ? '+' : ''}${walletDetails.unrealized_pnl?.toFixed(2)}
+                      {(walletDetails.unrealized_pnl ?? 0) >= 0 ? '+' : ''}${(walletDetails.unrealized_pnl ?? 0).toFixed(2)}
                     </div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Positions</div>
-                    <div className="text-2xl font-['Manrope'] font-bold">{walletDetails.total_positions}</div>
+                    <div className="text-2xl font-['Manrope'] font-bold">{walletDetails.total_positions ?? 0}</div>
                   </div>
                 </div>
               </Card>
@@ -373,12 +383,12 @@ export default function WalletTracker() {
                   </div>
 
                   <TabsContent value="buying" className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
-                    {walletDetails.buying_positions?.length === 0 ? (
+                    {!Array.isArray(walletDetails.buying_positions) || walletDetails.buying_positions.length === 0 ? (
                       <div className="text-center py-8 text-gray-400">
                         <p className="text-sm">No buying positions</p>
                       </div>
                     ) : (
-                      walletDetails.buying_positions?.map((pos, idx) => (
+                      walletDetails.buying_positions.map((pos, idx) => (
                         <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm bg-green-50/30">
                           <div className="font-semibold text-sm mb-2">{pos.market}</div>
                           <div className="grid grid-cols-2 gap-2 text-xs">
@@ -410,12 +420,12 @@ export default function WalletTracker() {
                   </TabsContent>
 
                   <TabsContent value="selling" className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
-                    {walletDetails.selling_positions?.length === 0 ? (
+                    {!Array.isArray(walletDetails.selling_positions) || walletDetails.selling_positions.length === 0 ? (
                       <div className="text-center py-8 text-gray-400">
                         <p className="text-sm">No selling positions</p>
                       </div>
                     ) : (
-                      walletDetails.selling_positions?.map((pos, idx) => (
+                      walletDetails.selling_positions.map((pos, idx) => (
                         <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm bg-red-50/30">
                           <div className="font-semibold text-sm mb-2">{pos.market}</div>
                           <div className="grid grid-cols-2 gap-2 text-xs">
@@ -454,7 +464,7 @@ export default function WalletTracker() {
                   <h3 className="text-lg font-['Manrope'] font-semibold">Recent Activity</h3>
                 </div>
                 <div className="p-4 space-y-2 max-h-[300px] overflow-y-auto">
-                  {activityFeed.map((activity, idx) => (
+                  {(Array.isArray(activityFeed) ? activityFeed : []).map((activity, idx) => (
                     <div key={idx} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0">
                       <div className="flex items-center gap-3">
                         {activity.action === 'BUY' ? (
