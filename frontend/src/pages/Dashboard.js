@@ -55,7 +55,7 @@ export default function Dashboard() {
     });
 
     socketRef.current.on('new_signal', (signal) => {
-      setSignals(prev => [signal, ...prev].slice(0, 20));
+      setSignals(prev => [signal, ...(Array.isArray(prev) ? prev : [])].slice(0, 20));
       toast.success('New trading signal generated!');
     });
 
@@ -76,9 +76,10 @@ export default function Dashboard() {
   const fetchCurrentPrices = async () => {
     try {
       const response = await axios.get(`${API}/prices/current`);
-      setBinancePrice(response.data.binance_price);
-      setPolymarketPrice(response.data.polymarket_price);
-      setPriceDelta(response.data.price_delta);
+      const data = response.data || {};
+      setBinancePrice(data.binance_price ?? null);
+      setPolymarketPrice(data.polymarket_price ?? null);
+      setPriceDelta(data.price_delta ?? 0);
     } catch (error) {
       console.error('Error fetching prices:', error);
     }
@@ -87,18 +88,20 @@ export default function Dashboard() {
   const fetchWallets = async () => {
     try {
       const response = await axios.get(`${API}/wallets`);
-      setWallets(response.data);
+      setWallets(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching wallets:', error);
+      setWallets([]);
     }
   };
 
   const fetchSignals = async () => {
     try {
       const response = await axios.get(`${API}/signals`);
-      setSignals(response.data);
+      setSignals(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching signals:', error);
+      setSignals([]);
     }
   };
 
@@ -156,10 +159,15 @@ export default function Dashboard() {
     setSelectedWallet(wallet);
     try {
       const response = await axios.get(`${API}/wallets/${wallet.address}/positions`);
-      setWalletPositions(response.data);
+      const data = response.data || {};
+      setWalletPositions({
+        ...data,
+        positions: Array.isArray(data.positions) ? data.positions : [],
+      });
     } catch (error) {
       console.error('Error fetching wallet positions:', error);
       toast.error('Failed to load wallet positions');
+      setWalletPositions(null);
     }
   };
 
@@ -234,7 +242,7 @@ export default function Dashboard() {
                 </Button>
               </div>
               <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto" data-testid="signals-list">
-                {signals.length === 0 ? (
+                {!Array.isArray(signals) || signals.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
                     <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p className="text-sm">No signals yet. Generate your first signal.</p>
@@ -324,7 +332,7 @@ export default function Dashboard() {
 
                 {/* Wallet List */}
                 <div className="space-y-2 max-h-[400px] overflow-y-auto" data-testid="wallet-list">
-                  {wallets.length === 0 ? (
+                  {!Array.isArray(wallets) || wallets.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
                       <Wallet className="w-10 h-10 mx-auto mb-2 opacity-30" />
                       <p className="text-xs">No wallets tracked yet</p>
@@ -381,7 +389,7 @@ export default function Dashboard() {
                           {walletPositions.total_pnl >= 0 ? '+' : ''}{walletPositions.total_pnl?.toFixed(2)}
                         </span>
                       </div>
-                      {walletPositions.positions?.map((pos, idx) => (
+                      {(Array.isArray(walletPositions.positions) ? walletPositions.positions : []).map((pos, idx) => (
                         <div key={idx} className="text-xs border-t border-gray-200 pt-2 mt-2">
                           <div className="font-semibold">{pos.market}</div>
                           <div className="flex justify-between mt-1 text-gray-600">
