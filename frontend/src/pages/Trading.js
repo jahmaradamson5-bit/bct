@@ -82,6 +82,7 @@ export default function Trading() {
     }
     setAutoTradingEnabled(!autoTradingEnabled);
     toast.success(autoTradingEnabled ? 'Auto-trading disabled' : 'Auto-trading enabled');
+  };
 
   // Generate chart data for trading performance
   const generateTradingChartData = () => {
@@ -118,8 +119,6 @@ export default function Trading() {
   };
 
   const tradingChartData = isConnected ? generateTradingChartData() : { pnlHistory: [], metrics: {} };
-
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
