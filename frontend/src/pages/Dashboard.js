@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
 import { Activity, Zap, Wallet, ArrowUpRight, ArrowDownRight, Brain, Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
@@ -7,7 +7,9 @@ import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { toast } from 'sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL && process.env.REACT_APP_BACKEND_URL !== 'undefined'
+  ? process.env.REACT_APP_BACKEND_URL.replace(/\/+$/, '')
+  : '';
 const API = `${BACKEND_URL}/api`;
 const SOCKET_PATH = '/api/socket.io';
 
@@ -73,9 +75,18 @@ export default function Dashboard() {
     fetchCurrentPrices();
     fetchWallets();
     fetchSignals();
-  }, []);
+  }, [fetchCurrentPrices, fetchWallets, fetchSignals]);
 
-  const fetchCurrentPrices = async () => {
+  const toSafeArray = (data) => {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      const nested = data.wallets || data.signals || data.data || data.results;
+      if (Array.isArray(nested)) return nested;
+    }
+    return [];
+  };
+
+  const fetchCurrentPrices = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/prices/current`);
       const data = response.data || {};
@@ -85,19 +96,9 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error fetching prices:', error);
     }
-  };
+  }, []);
 
-  const toSafeArray = (data) => {
-    if (Array.isArray(data)) return data;
-    if (data && typeof data === 'object') {
-      // Handle common nested shapes: { wallets: [...] }, { signals: [...] }, { data: [...] }, { results: [...] }
-      const nested = data.wallets || data.signals || data.data || data.results;
-      if (Array.isArray(nested)) return nested;
-    }
-    return [];
-  };
-
-  const fetchWallets = async () => {
+  const fetchWallets = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/wallets`);
       setWallets(toSafeArray(response.data));
@@ -105,9 +106,9 @@ export default function Dashboard() {
       console.error('Error fetching wallets:', error);
       setWallets([]);
     }
-  };
+  }, []);
 
-  const fetchSignals = async () => {
+  const fetchSignals = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/signals`);
       setSignals(toSafeArray(response.data));
@@ -115,7 +116,7 @@ export default function Dashboard() {
       console.error('Error fetching signals:', error);
       setSignals([]);
     }
-  };
+  }, []);
 
   const addWallet = async () => {
     if (!newWalletAddress || !newWalletLabel) {

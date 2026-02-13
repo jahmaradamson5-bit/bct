@@ -17,8 +17,18 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function PositionDistribution({ data }) {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  const dataWithTotal = data.map(item => ({ ...item, total }));
+  const safeData = Array.isArray(data) ? data : [];
+
+  if (safeData.length === 0) {
+    return (
+      <div className="w-full h-[300px] flex items-center justify-center text-gray-400 text-sm">
+        No position data available
+      </div>
+    );
+  }
+
+  const total = safeData.reduce((sum, item) => sum + (item.value || 0), 0);
+  const dataWithTotal = safeData.map(item => ({ ...item, total }));
 
   return (
     <div className="w-full h-[300px]">

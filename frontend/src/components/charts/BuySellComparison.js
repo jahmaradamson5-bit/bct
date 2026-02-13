@@ -15,10 +15,20 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function BuySellComparison({ data }) {
+  const safeData = Array.isArray(data) ? data : [];
+
+  if (safeData.length === 0) {
+    return (
+      <div className="w-full h-[300px] flex items-center justify-center text-gray-400 text-sm">
+        No comparison data available
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <BarChart data={safeData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis 
             dataKey="name" 

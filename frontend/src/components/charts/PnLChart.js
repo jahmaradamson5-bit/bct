@@ -16,10 +16,20 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function PnLChart({ data }) {
+  const safeData = Array.isArray(data) ? data : [];
+
+  if (safeData.length === 0) {
+    return (
+      <div className="w-full h-[300px] flex items-center justify-center text-gray-400 text-sm">
+        No PNL data available
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <AreaChart data={safeData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorPnl" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
