@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Settings as SettingsIcon, Key, Save, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -18,11 +18,7 @@ export default function SettingsPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    checkConnectionStatus();
-  }, []);
-
-  const checkConnectionStatus = async () => {
+  const checkConnectionStatus = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/trading/status`);
       setIsConnected(response.data.connected);
@@ -32,7 +28,11 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error checking connection:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkConnectionStatus();
+  }, [checkConnectionStatus]);
 
   const connectAccount = async () => {
     if (!privateKey || !proxyAddress) {

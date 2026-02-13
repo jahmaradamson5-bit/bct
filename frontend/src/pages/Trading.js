@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Zap, TrendingUp, TrendingDown, Play, Pause, DollarSign, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -25,7 +25,7 @@ export default function Trading() {
 
   useEffect(() => {
     checkTradingStatus();
-  }, []);
+  }, [checkTradingStatus]);
 
   useEffect(() => {
     if (isConnected) {
@@ -38,9 +38,9 @@ export default function Trading() {
       }, 10000);
       return () => clearInterval(interval);
     }
-  }, [isConnected]);
+  }, [isConnected, fetchPositions, fetchOpenOrders, fetchTradeHistory]);
 
-  const checkTradingStatus = async () => {
+  const checkTradingStatus = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/trading/status`);
       setIsConnected(response.data.connected);
@@ -48,34 +48,34 @@ export default function Trading() {
     } catch (error) {
       console.error('Error checking trading status:', error);
     }
-  };
+  }, []);
 
-  const fetchPositions = async () => {
+  const fetchPositions = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/trading/positions`);
-      setPositions(response.data);
+      setPositions(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching positions:', error);
     }
-  };
+  }, []);
 
-  const fetchOpenOrders = async () => {
+  const fetchOpenOrders = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/trading/orders`);
-      setOpenOrders(response.data);
+      setOpenOrders(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
-  };
+  }, []);
 
-  const fetchTradeHistory = async () => {
+  const fetchTradeHistory = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/trading/history?limit=50`);
-      setTradeHistory(response.data);
+      setTradeHistory(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching trade history:', error);
     }
-  };
+  }, []);
 
   const toggleAutoTrading = () => {
     if (!isConnected) {
