@@ -100,28 +100,25 @@ export default function WalletTracker() {
 
   const chartData = generateChartData();
 
-  useEffect(() => {
-    fetchWallets();
-  }, [fetchWallets]);
-
-  const toSafeArray = (data) => {
-    if (Array.isArray(data)) return data;
-    if (data && typeof data === 'object') {
-      const nested = data.wallets || data.signals || data.data || data.results;
-      if (Array.isArray(nested)) return nested;
-    }
-    return [];
-  };
-
   const fetchWallets = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/wallets`);
-      setWallets(toSafeArray(response.data));
+      const data = response.data;
+      const safe = Array.isArray(data)
+        ? data
+        : data && typeof data === 'object'
+          ? (data.wallets || data.data || data.results || [])
+          : [];
+      setWallets(Array.isArray(safe) ? safe : []);
     } catch (error) {
       console.error('Error fetching wallets:', error);
       setWallets([]);
     }
   }, []);
+
+  useEffect(() => {
+    fetchWallets();
+  }, [fetchWallets]);
 
   const addWallet = async () => {
     if (!newWalletAddress || !newWalletLabel) {
