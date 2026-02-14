@@ -102,7 +102,8 @@ export default function WalletTracker() {
 
   const fetchWallets = useCallback(async () => {
     try {
-      const response = await axios.get(`${API}/wallets`);
+      const response = await axios.get(`${API}/wallets`); dashboard-page-crash
+      setWallets(Array.isArray(response.data) ? response.data : []
       const data = response.data;
       const safe = Array.isArray(data)
         ? data
@@ -110,6 +111,7 @@ export default function WalletTracker() {
           ? (data.wallets || data.data || data.results || [])
           : [];
       setWallets(Array.isArray(safe) ? safe : []);
+ main
     } catch (error) {
       console.error('Error fetching wallets:', error);
       setWallets([]);
@@ -166,8 +168,12 @@ export default function WalletTracker() {
         axios.get(`${API}/wallets/${wallet.address}/activity-feed`)
       ]);
       
+ dashboard-page-crash
+      setWalletDetails(detailsRes.data);
+      setActivityFeed(Array.isArray(activityRes.data) ? activityRes.data : []);
+
       setWalletDetails(detailsRes.data || null);
-      setActivityFeed(toSafeArray(activityRes.data));
+      setActivityFeed(toSafeArray(activityRes.data)); main
     } catch (error) {
       console.error('Error fetching wallet details:', error);
       toast.error('Failed to load wallet details');
@@ -466,6 +472,25 @@ export default function WalletTracker() {
                   <h3 className="text-lg font-['Manrope'] font-semibold">Recent Activity</h3>
                 </div>
                 <div className="p-4 space-y-2 max-h-[300px] overflow-y-auto">
+ dashboard-page-crash
+                  {!Array.isArray(activityFeed) || activityFeed.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <p className="text-sm">No recent activity</p>
+                    </div>
+                  ) : (
+                    activityFeed.map((activity, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0">
+                        <div className="flex items-center gap-3">
+                          {activity.action === 'BUY' ? (
+                            <TrendingUp className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4 text-red-600" />
+                          )}
+                          <div>
+                            <div className="text-sm font-semibold">{activity.market}</div>
+                            <div className="text-xs text-gray-500">
+                              {activity.action} {activity.shares} shares @ {activity.price}
+                            </div>
                   {(Array.isArray(activityFeed) ? activityFeed : []).map((activity, idx) => (
                     <div key={idx} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0">
                       <div className="flex items-center gap-3">
@@ -478,14 +503,23 @@ export default function WalletTracker() {
                           <div className="text-sm font-semibold">{activity.market}</div>
                           <div className="text-xs text-gray-500">
                             {activity.action} {activity.shares} shares @ {activity.price}
+ main
                           </div>
                         </div>
+                        <div className="text-xs text-gray-400 font-mono">
+                          {new Date(activity.timestamp).toLocaleTimeString()}
+                        </div>
                       </div>
+ dashboard-page-crash
+                    ))
+                  )}
+
                       <div className="text-xs text-gray-400 font-mono">
                         {activity.timestamp ? new Date(activity.timestamp).toLocaleTimeString() : '--:--'}
                       </div>
                     </div>
                   ))}
+ main
                 </div>
               </Card>
             </div>

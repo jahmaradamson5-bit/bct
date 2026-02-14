@@ -15,17 +15,24 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
+ dashboard-page-crash
+export default function PnLChart({ data = [] }) {
+  if (!Array.isArray(data) || data.length === 0) {
+
 export default function PnLChart({ data }) {
   const safeData = Array.isArray(data) ? data : [];
 
   if (safeData.length === 0) {
+ main
     return (
       <div className="w-full h-[300px] flex items-center justify-center text-gray-400 text-sm">
         No PNL data available
       </div>
     );
   }
+ dashboard-page-crash
 
+ main
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">

@@ -57,10 +57,14 @@ export default function Dashboard() {
     });
 
     socketRef.current.on('new_signal', (signal) => {
+ dashboard-page-crash
+      setSignals(prev => [signal, ...(Array.isArray(prev) ? prev : [])].slice(0, 20));
+      toast.success('New trading signal generated!')
       if (signal && typeof signal === 'object') {
         setSignals(prev => [signal, ...(Array.isArray(prev) ? prev : [])].slice(0, 20));
         toast.success('New trading signal generated!');
       }
+ main
     });
 
     return () => {
@@ -101,7 +105,11 @@ export default function Dashboard() {
   const fetchWallets = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/wallets`);
+ dashboard-page-crash
+      setWallets(Array.isArray(response.data) ? response.data : []);
+
       setWallets(toSafeArray(response.data));
+ main
     } catch (error) {
       console.error('Error fetching wallets:', error);
       setWallets([]);
@@ -111,7 +119,11 @@ export default function Dashboard() {
   const fetchSignals = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/signals`);
+ dashboard-page-crash
+      setSignals(Array.isArray(response.data) ? response.data : []);
+
       setSignals(toSafeArray(response.data));
+ main
     } catch (error) {
       console.error('Error fetching signals:', error);
       setSignals([]);
@@ -283,7 +295,11 @@ export default function Dashboard() {
                         <div className="text-right">
                           <div className="text-xs text-gray-400 font-mono">CONFIDENCE</div>
                           <div className="text-sm font-bold font-['JetBrains_Mono']">
+ dashboard-page-crash
+                            {((signal.confidence ?? 0) * 100).toFixed(0)}%
+
                             {signal.confidence != null ? (signal.confidence * 100).toFixed(0) : '--'}%
+ main
                           </div>
                         </div>
                       </div>

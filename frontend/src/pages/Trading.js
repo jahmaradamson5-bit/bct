@@ -102,10 +102,11 @@ export default function Trading() {
     }
 
     // Calculate metrics from positions and trades
-    const totalValue = positions.reduce((sum, p) => sum + (p.currentValue || 0), 0);
-    const totalPnl = positions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-    const winningTrades = tradeHistory.filter(t => t.pnl && t.pnl > 0).length;
-    const totalTrades = tradeHistory.length;
+    const totalValue = (positions || []).reduce((sum, p) => sum + (p.currentValue || 0), 0);
+    const totalPnl = (positions || []).reduce((sum, p) => sum + (p.pnl || 0), 0);
+    const history = tradeHistory || [];
+    const winningTrades = history.filter(t => t.pnl && t.pnl > 0).length;
+    const totalTrades = history.length;
     
     const metrics = {
       totalValue,
@@ -113,14 +114,19 @@ export default function Trading() {
       winRate: totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0,
       avgReturn: totalValue > 0 ? (totalPnl / totalValue) * 100 : 0,
       totalTrades,
-      bestTrade: Math.max(...tradeHistory.map(t => t.pnl || 0), 0),
-      worstTrade: Math.min(...tradeHistory.map(t => t.pnl || 0), 0)
+      bestTrade: Math.max(...history.map(t => t.pnl || 0), 0),
+      worstTrade: Math.min(...history.map(t => t.pnl || 0), 0)
     };
 
     return { pnlHistory, metrics };
   };
 
+ dashboard-page-crash
+  const defaultMetrics = { totalValue: 0, totalPnl: 0, winRate: 0, avgReturn: 0, totalTrades: 0, bestTrade: 0, worstTrade: 0 };
+  const tradingChartData = isConnected ? generateTradingChartData() : { pnlHistory: [], metrics: defaultMetrics };
+
   const tradingChartData = isConnected ? generateTradingChartData() : { pnlHistory: [], metrics: {} };
+ main
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
