@@ -90,7 +90,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error fetching prices:', error);
     }
-  }, []);
+  }, [setBinancePrice, setPolymarketPrice, setPriceDelta]);
 
   const fetchWallets = useCallback(async () => {
     try {
@@ -100,7 +100,7 @@ export default function Dashboard() {
       console.error('Error fetching wallets:', error);
       setWallets([]);
     }
-  }, []);
+  }, [setWallets]);
 
   const fetchSignals = useCallback(async () => {
     try {
@@ -110,7 +110,7 @@ export default function Dashboard() {
       console.error('Error fetching signals:', error);
       setSignals([]);
     }
-  }, []);
+  }, [setSignals]);
 
   // Fetch initial data
   useEffect(() => {

@@ -28,7 +28,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error checking connection:', error);
     }
-  }, []);
+  }, [setIsConnected, setProxyAddress]);
 
   useEffect(() => {
     checkConnectionStatus();

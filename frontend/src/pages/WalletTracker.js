@@ -112,6 +112,7 @@ export default function WalletTracker() {
   /*  Data fetching                                                      */
   /* ------------------------------------------------------------------ */
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(function () {
     var doFetch = async function () {
       try {
@@ -123,7 +124,7 @@ export default function WalletTracker() {
       }
     };
     doFetch();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setWallets]);
 
   var addWallet = async function () {
     if (!newWalletAddress || !newWalletLabel) {
