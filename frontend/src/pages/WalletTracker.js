@@ -11,11 +11,11 @@ import PositionDistribution from '../components/charts/PositionDistribution';
 import BuySellComparison from '../components/charts/BuySellComparison';
 import PerformanceMetrics from '../components/charts/PerformanceMetrics';
 
-const BACKEND_URL =
+var BACKEND_URL =
   process.env.REACT_APP_BACKEND_URL && process.env.REACT_APP_BACKEND_URL !== 'undefined'
     ? process.env.REACT_APP_BACKEND_URL.replace(/\/+$/, '')
     : '';
-const API = `${BACKEND_URL}/api`;
+var API = BACKEND_URL + '/api';
 
 /** Safely coerce any API response into an array */
 function toSafeArray(data) {
@@ -28,13 +28,13 @@ function toSafeArray(data) {
 }
 
 export default function WalletTracker() {
-  const [wallets, setWallets] = useState([]);
-  const [selectedWallet, setSelectedWallet] = useState(null);
-  const [walletDetails, setWalletDetails] = useState(null);
-  const [activityFeed, setActivityFeed] = useState([]);
-  const [newWalletAddress, setNewWalletAddress] = useState('');
-  const [newWalletLabel, setNewWalletLabel] = useState('');
-  const [loading, setLoading] = useState(false);
+  var _a = useState([]), wallets = _a[0], setWallets = _a[1];
+  var _b = useState(null), selectedWallet = _b[0], setSelectedWallet = _b[1];
+  var _c = useState(null), walletDetails = _c[0], setWalletDetails = _c[1];
+  var _d = useState([]), activityFeed = _d[0], setActivityFeed = _d[1];
+  var _e = useState(''), newWalletAddress = _e[0], setNewWalletAddress = _e[1];
+  var _f = useState(''), newWalletLabel = _f[0], setNewWalletLabel = _f[1];
+  var _g = useState(false), loading = _g[0], setLoading = _g[1];
 
   /* ------------------------------------------------------------------ */
   /*  Chart data generator (component scope)                             */
@@ -47,7 +47,6 @@ export default function WalletTracker() {
     var sellingPositions = Array.isArray(walletDetails.selling_positions) ? walletDetails.selling_positions : [];
     var allPositions = buyingPositions.concat(sellingPositions);
 
-    // PNL history (simulated time series)
     var pnlHistory = [];
     var baseTime = Date.now();
     for (var i = 0; i < 24; i++) {
@@ -55,17 +54,16 @@ export default function WalletTracker() {
       var pnl = (walletDetails.total_pnl || 0) * (0.5 + (i / 24) * 0.5) + Math.random() * 5 - 2.5;
       pnlHistory.push({
         time: time.getHours() + ':00',
-        pnl: parseFloat(pnl.toFixed(2)),
+        pnl: parseFloat(pnl.toFixed(2))
       });
     }
 
-    // Position distribution by market
     var distribution = [];
     buyingPositions.forEach(function (pos, idx) {
       if (idx < 5) {
         distribution.push({
           name: (pos.market || 'Position ' + (idx + 1)).substring(0, 20),
-          value: Math.abs(pos.current_value || 0),
+          value: Math.abs(pos.current_value || 0)
         });
       }
     });
@@ -73,12 +71,11 @@ export default function WalletTracker() {
       if (idx < 5) {
         distribution.push({
           name: (pos.market || 'Position ' + (idx + 1)).substring(0, 20),
-          value: Math.abs(pos.current_value || 0),
+          value: Math.abs(pos.current_value || 0)
         });
       }
     });
 
-    // Buy vs Sell comparison by market type
     var markets = {};
     buyingPositions.forEach(function (pos) {
       var marketType = pos.market ? pos.market.split(' ')[0] : 'Other';
@@ -92,7 +89,6 @@ export default function WalletTracker() {
     });
     var buySell = Object.values(markets).slice(0, 5);
 
-    // Performance metrics
     var totalPositions = walletDetails.total_positions || 0;
     var winningPositions = allPositions.filter(function (p) { return (p.unrealized_pnl || 0) > 0; }).length;
     var pnlValues = allPositions.map(function (p) { return p.unrealized_pnl || 0; });
@@ -104,7 +100,7 @@ export default function WalletTracker() {
       avgReturn: walletDetails.total_value > 0 ? ((walletDetails.total_pnl / walletDetails.total_value) * 100) : 0,
       totalTrades: totalPositions,
       bestTrade: pnlValues.length > 0 ? Math.max.apply(null, pnlValues) : 0,
-      worstTrade: pnlValues.length > 0 ? Math.min.apply(null, pnlValues) : 0,
+      worstTrade: pnlValues.length > 0 ? Math.min.apply(null, pnlValues) : 0
     };
 
     return { pnlHistory: pnlHistory, distribution: distribution, buySell: buySell, metrics: metrics };
@@ -141,7 +137,7 @@ export default function WalletTracker() {
     try {
       await axios.post(API + '/wallets', {
         address: newWalletAddress,
-        label: newWalletLabel,
+        label: newWalletLabel
       });
       toast.success('Wallet added successfully');
       setNewWalletAddress('');
@@ -174,7 +170,7 @@ export default function WalletTracker() {
     try {
       var results = await Promise.all([
         axios.get(API + '/wallets/' + wallet.address + '/detailed'),
-        axios.get(API + '/wallets/' + wallet.address + '/activity-feed'),
+        axios.get(API + '/wallets/' + wallet.address + '/activity-feed')
       ]);
       setWalletDetails(results[0].data || null);
       setActivityFeed(toSafeArray(results[1].data));
@@ -201,7 +197,6 @@ export default function WalletTracker() {
               <h2 className="text-xl font-['Manrope'] font-semibold tracking-tight">Tracked Wallets</h2>
             </div>
             <div className="p-4">
-              {/* Add Wallet Form */}
               <div className="space-y-2 mb-4" data-testid="add-wallet-form">
                 <Input
                   placeholder="Wallet Address (0x...)"
@@ -227,7 +222,6 @@ export default function WalletTracker() {
                 </Button>
               </div>
 
-              {/* Wallet List */}
               <div className="space-y-2 max-h-[600px] overflow-y-auto" data-testid="wallet-list">
                 {!Array.isArray(wallets) || wallets.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
@@ -290,7 +284,6 @@ export default function WalletTracker() {
             </Card>
           ) : walletDetails ? (
             <div className="space-y-4">
-              {/* Summary Card */}
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm" data-testid="wallet-summary">
                 <div className="p-4 border-b border-[#E4E4E7]">
                   <h2 className="text-xl font-['Manrope'] font-semibold">{selectedWallet.label}</h2>
@@ -299,18 +292,18 @@ export default function WalletTracker() {
                 <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Total Value</div>
-                    <div className="text-2xl font-['Manrope'] font-bold">${(walletDetails.total_value || 0).toFixed(2)}</div>
+                    <div className="text-2xl font-['Manrope'] font-bold">{'$' + (walletDetails.total_value || 0).toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Total PNL</div>
-                    <div className={'text-2xl font-[\'Manrope\'] font-bold ' + ((walletDetails.total_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                      {(walletDetails.total_pnl || 0) >= 0 ? '+' : ''}${(walletDetails.total_pnl || 0).toFixed(2)}
+                    <div className={'text-2xl font-bold ' + ((walletDetails.total_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
+                      {(walletDetails.total_pnl || 0) >= 0 ? '+' : ''}{'$' + (walletDetails.total_pnl || 0).toFixed(2)}
                     </div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Unrealized PNL</div>
-                    <div className={'text-xl font-[\'JetBrains_Mono\'] font-semibold ' + ((walletDetails.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                      {(walletDetails.unrealized_pnl || 0) >= 0 ? '+' : ''}${(walletDetails.unrealized_pnl || 0).toFixed(2)}
+                    <div className={'text-xl font-semibold ' + ((walletDetails.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
+                      {(walletDetails.unrealized_pnl || 0) >= 0 ? '+' : ''}{'$' + (walletDetails.unrealized_pnl || 0).toFixed(2)}
                     </div>
                   </div>
                   <div>
@@ -320,7 +313,6 @@ export default function WalletTracker() {
                 </div>
               </Card>
 
-              {/* Performance Metrics */}
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                 <div className="p-4 border-b border-[#E4E4E7] flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -331,9 +323,7 @@ export default function WalletTracker() {
                 </div>
               </Card>
 
-              {/* Charts Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* PNL Over Time */}
                 <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                   <div className="p-4 border-b border-[#E4E4E7]">
                     <h3 className="text-sm font-['Manrope'] font-semibold">PNL Over Time (24h)</h3>
@@ -343,7 +333,6 @@ export default function WalletTracker() {
                   </div>
                 </Card>
 
-                {/* Position Distribution */}
                 <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                   <div className="p-4 border-b border-[#E4E4E7]">
                     <h3 className="text-sm font-['Manrope'] font-semibold">Position Distribution</h3>
@@ -353,14 +342,13 @@ export default function WalletTracker() {
                       <PositionDistribution data={chartData.distribution} />
                     ) : (
                       <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
-                        No position data available
+                        Waiting for data
                       </div>
                     )}
                   </div>
                 </Card>
               </div>
 
-              {/* Buy vs Sell Comparison */}
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                 <div className="p-4 border-b border-[#E4E4E7]">
                   <h3 className="text-sm font-['Manrope'] font-semibold">Buy vs Sell by Market Type</h3>
@@ -370,24 +358,23 @@ export default function WalletTracker() {
                     <BuySellComparison data={chartData.buySell} />
                   ) : (
                     <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
-                      No comparison data available
+                      Waiting for data
                     </div>
                   )}
                 </div>
               </Card>
 
-              {/* Positions Tabs */}
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                 <Tabs defaultValue="buying" className="w-full">
                   <div className="p-4 border-b border-[#E4E4E7]">
                     <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-sm">
                       <TabsTrigger value="buying" className="data-[state=active]:bg-white rounded-sm">
                         <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
-                        {'Buying Positions (' + (Array.isArray(walletDetails.buying_positions) ? walletDetails.buying_positions.length : 0) + ')'}
+                        {'Buying (' + (Array.isArray(walletDetails.buying_positions) ? walletDetails.buying_positions.length : 0) + ')'}
                       </TabsTrigger>
                       <TabsTrigger value="selling" className="data-[state=active]:bg-white rounded-sm">
                         <TrendingDown className="w-4 h-4 mr-2 text-red-600" />
-                        {'Selling Positions (' + (Array.isArray(walletDetails.selling_positions) ? walletDetails.selling_positions.length : 0) + ')'}
+                        {'Selling (' + (Array.isArray(walletDetails.selling_positions) ? walletDetails.selling_positions.length : 0) + ')'}
                       </TabsTrigger>
                     </TabsList>
                   </div>
@@ -416,12 +403,12 @@ export default function WalletTracker() {
                                 <span className="text-gray-500">Current:</span> <span className="font-mono">{pos.current_price}</span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Value:</span> <span className="font-mono font-semibold">${pos.current_value || 0}</span>
+                                <span className="text-gray-500">Value:</span> <span className="font-mono font-semibold">{'$' + (pos.current_value || 0)}</span>
                               </div>
                               <div>
                                 <span className="text-gray-500">PNL:</span>
                                 <span className={'font-mono font-semibold ml-1 ' + ((pos.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                                  {(pos.unrealized_pnl || 0) >= 0 ? '+' : ''}${pos.unrealized_pnl || 0} ({(pos.pnl_percent || 0) >= 0 ? '+' : ''}{pos.pnl_percent || 0}%)
+                                  {(pos.unrealized_pnl || 0) >= 0 ? '+' : ''}{'$' + (pos.unrealized_pnl || 0) + ' (' + ((pos.pnl_percent || 0) >= 0 ? '+' : '') + (pos.pnl_percent || 0) + '%)'}
                                 </span>
                               </div>
                             </div>
@@ -455,12 +442,12 @@ export default function WalletTracker() {
                                 <span className="text-gray-500">Current:</span> <span className="font-mono">{pos.current_price}</span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Value:</span> <span className="font-mono font-semibold">${Math.abs(pos.current_value || 0)}</span>
+                                <span className="text-gray-500">Value:</span> <span className="font-mono font-semibold">{'$' + Math.abs(pos.current_value || 0)}</span>
                               </div>
                               <div>
                                 <span className="text-gray-500">PNL:</span>
                                 <span className={'font-mono font-semibold ml-1 ' + ((pos.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                                  {(pos.unrealized_pnl || 0) >= 0 ? '+' : ''}${pos.unrealized_pnl || 0} ({(pos.pnl_percent || 0) >= 0 ? '+' : ''}{pos.pnl_percent || 0}%)
+                                  {(pos.unrealized_pnl || 0) >= 0 ? '+' : ''}{'$' + (pos.unrealized_pnl || 0) + ' (' + ((pos.pnl_percent || 0) >= 0 ? '+' : '') + (pos.pnl_percent || 0) + '%)'}
                                 </span>
                               </div>
                             </div>
@@ -472,7 +459,6 @@ export default function WalletTracker() {
                 </Tabs>
               </Card>
 
-              {/* Activity Feed */}
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                 <div className="p-4 border-b border-[#E4E4E7]">
                   <h3 className="text-lg font-['Manrope'] font-semibold">Recent Activity</h3>
@@ -495,7 +481,7 @@ export default function WalletTracker() {
                             <div>
                               <div className="text-sm font-semibold">{activity.market}</div>
                               <div className="text-xs text-gray-500">
-                                {activity.action} {activity.shares} shares @ {activity.price}
+                                {activity.action + ' ' + activity.shares + ' shares @ ' + activity.price}
                               </div>
                             </div>
                           </div>

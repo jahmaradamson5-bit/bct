@@ -10,26 +10,26 @@ import { toast } from 'sonner';
 import PnLChart from '../components/charts/PnLChart';
 import PerformanceMetrics from '../components/charts/PerformanceMetrics';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL && process.env.REACT_APP_BACKEND_URL !== 'undefined'
+var BACKEND_URL = process.env.REACT_APP_BACKEND_URL && process.env.REACT_APP_BACKEND_URL !== 'undefined'
   ? process.env.REACT_APP_BACKEND_URL.replace(/\/+$/, '')
   : '';
-const API = `${BACKEND_URL}/api`;
+var API = BACKEND_URL + '/api';
 
 export default function Trading() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [userAddress, setUserAddress] = useState('');
-  const [autoTradingEnabled, setAutoTradingEnabled] = useState(false);
-  const [positions, setPositions] = useState([]);
-  const [openOrders, setOpenOrders] = useState([]);
-  const [tradeHistory, setTradeHistory] = useState([]);
+  var _a = useState(false), isConnected = _a[0], setIsConnected = _a[1];
+  var _b = useState(''), userAddress = _b[0], setUserAddress = _b[1];
+  var _c = useState(false), autoTradingEnabled = _c[0], setAutoTradingEnabled = _c[1];
+  var _d = useState([]), positions = _d[0], setPositions = _d[1];
+  var _e = useState([]), openOrders = _e[0], setOpenOrders = _e[1];
+  var _f = useState([]), tradeHistory = _f[0], setTradeHistory = _f[1];
 
   /* ------------------------------------------------------------------ */
-  /*  Data fetching (all useCallback, all with Array.isArray guards)     */
+  /*  Data fetching                                                      */
   /* ------------------------------------------------------------------ */
 
-  const checkTradingStatus = useCallback(async () => {
+  var checkTradingStatus = useCallback(async function () {
     try {
-      const response = await axios.get(`${API}/trading/status`);
+      var response = await axios.get(API + '/trading/status');
       setIsConnected(response.data.connected);
       setUserAddress(response.data.address || '');
     } catch (error) {
@@ -37,9 +37,9 @@ export default function Trading() {
     }
   }, []);
 
-  const fetchPositions = useCallback(async () => {
+  var fetchPositions = useCallback(async function () {
     try {
-      const response = await axios.get(`${API}/trading/positions`);
+      var response = await axios.get(API + '/trading/positions');
       setPositions(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching positions:', error);
@@ -47,9 +47,9 @@ export default function Trading() {
     }
   }, []);
 
-  const fetchOpenOrders = useCallback(async () => {
+  var fetchOpenOrders = useCallback(async function () {
     try {
-      const response = await axios.get(`${API}/trading/orders`);
+      var response = await axios.get(API + '/trading/orders');
       setOpenOrders(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -57,9 +57,9 @@ export default function Trading() {
     }
   }, []);
 
-  const fetchTradeHistory = useCallback(async () => {
+  var fetchTradeHistory = useCallback(async function () {
     try {
-      const response = await axios.get(`${API}/trading/history?limit=50`);
+      var response = await axios.get(API + '/trading/history?limit=50');
       setTradeHistory(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching trade history:', error);
@@ -71,86 +71,79 @@ export default function Trading() {
   /*  Effects                                                            */
   /* ------------------------------------------------------------------ */
 
-  useEffect(() => {
+  useEffect(function () {
     checkTradingStatus();
   }, [checkTradingStatus]);
 
-  useEffect(() => {
+  useEffect(function () {
     if (isConnected) {
       fetchPositions();
       fetchOpenOrders();
       fetchTradeHistory();
-      const interval = setInterval(() => {
+      var interval = setInterval(function () {
         fetchPositions();
         fetchOpenOrders();
       }, 10000);
-      return () => clearInterval(interval);
+      return function () { clearInterval(interval); };
     }
   }, [isConnected, fetchPositions, fetchOpenOrders, fetchTradeHistory]);
 
   /* ------------------------------------------------------------------ */
-  /*  toggleAutoTrading – self-contained handler, nothing else inside    */
+  /*  toggleAutoTrading -- self-contained handler, nothing else inside   */
   /* ------------------------------------------------------------------ */
 
-  const toggleAutoTrading = () => {
+  function toggleAutoTrading() {
     if (!isConnected) {
       toast.error('Please connect your Polymarket account first');
       return;
     }
     setAutoTradingEnabled(!autoTradingEnabled);
     toast.success(autoTradingEnabled ? 'Auto-trading disabled' : 'Auto-trading enabled');
-  };
+  }
 
   /* ------------------------------------------------------------------ */
   /*  Chart data generator (component scope, NOT inside any handler)     */
   /* ------------------------------------------------------------------ */
 
-  const generateTradingChartData = () => {
-    const safePositions = Array.isArray(positions) ? positions : [];
-    const safeHistory = Array.isArray(tradeHistory) ? tradeHistory : [];
+  function generateTradingChartData() {
+    var safePositions = Array.isArray(positions) ? positions : [];
+    var safeHistory = Array.isArray(tradeHistory) ? tradeHistory : [];
 
-    // Simulated 24-hour PNL curve
-    const pnlHistory = [];
-    let cumulativePnl = 0;
-    for (let i = 0; i < 24; i++) {
-      const time = new Date(Date.now() - (23 - i) * 3600000);
+    var pnlHistory = [];
+    var cumulativePnl = 0;
+    for (var i = 0; i < 24; i++) {
+      var time = new Date(Date.now() - (23 - i) * 3600000);
       cumulativePnl += Math.random() * 10 - 4;
       pnlHistory.push({
-        time: `${time.getHours()}:00`,
-        pnl: parseFloat(cumulativePnl.toFixed(2)),
+        time: time.getHours() + ':00',
+        pnl: parseFloat(cumulativePnl.toFixed(2))
       });
     }
 
-    // Aggregate metrics
-    const totalValue = safePositions.reduce((sum, p) => sum + (p.currentValue || 0), 0);
-    const totalPnl = safePositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-    const winningTrades = safeHistory.filter((t) => t.pnl && t.pnl > 0).length;
-    const totalTrades = safeHistory.length;
+    var totalValue = safePositions.reduce(function (sum, p) { return sum + (p.currentValue || 0); }, 0);
+    var totalPnl = safePositions.reduce(function (sum, p) { return sum + (p.pnl || 0); }, 0);
+    var winningTrades = safeHistory.filter(function (t) { return t.pnl && t.pnl > 0; }).length;
+    var totalTrades = safeHistory.length;
 
-    const metrics = {
-      totalValue,
-      totalPnl,
+    var metrics = {
+      totalValue: totalValue,
+      totalPnl: totalPnl,
       winRate: totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0,
       avgReturn: totalValue > 0 ? (totalPnl / totalValue) * 100 : 0,
-      totalTrades,
-      bestTrade: safeHistory.length > 0 ? Math.max(...safeHistory.map((t) => t.pnl || 0)) : 0,
-      worstTrade: safeHistory.length > 0 ? Math.min(...safeHistory.map((t) => t.pnl || 0)) : 0,
+      totalTrades: totalTrades,
+      bestTrade: safeHistory.length > 0 ? Math.max.apply(null, safeHistory.map(function (t) { return t.pnl || 0; })) : 0,
+      worstTrade: safeHistory.length > 0 ? Math.min.apply(null, safeHistory.map(function (t) { return t.pnl || 0; })) : 0
     };
 
-    return { pnlHistory, metrics };
-  };
+    return { pnlHistory: pnlHistory, metrics: metrics };
+  }
 
-  /* --- SINGLE declaration of tradingChartData at component scope --- */
-  const defaultMetrics = {
-    totalValue: 0,
-    totalPnl: 0,
-    winRate: 0,
-    avgReturn: 0,
-    totalTrades: 0,
-    bestTrade: 0,
-    worstTrade: 0,
+  /* --- SINGLE declaration ------------------------------------------- */
+  var defaultMetrics = {
+    totalValue: 0, totalPnl: 0, winRate: 0,
+    avgReturn: 0, totalTrades: 0, bestTrade: 0, worstTrade: 0
   };
-  const tradingChartData = isConnected
+  var tradingChartData = isConnected
     ? generateTradingChartData()
     : { pnlHistory: [], metrics: defaultMetrics };
 
@@ -162,7 +155,6 @@ export default function Trading() {
     <div className="max-w-7xl mx-auto px-6 py-6">
       {!isConnected ? (
         <div className="space-y-4">
-          {/* Connection Prompt */}
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm max-w-2xl mx-auto">
             <div className="p-8 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -174,7 +166,7 @@ export default function Trading() {
                 Go to Settings to configure your account credentials.
               </p>
               <Button
-                onClick={() => (window.location.href = '/settings')}
+                onClick={function () { window.location.href = '/settings'; }}
                 className="bg-black text-white hover:bg-gray-800 rounded-sm px-6 py-3"
               >
                 Go to Settings
@@ -182,7 +174,6 @@ export default function Trading() {
             </div>
           </Card>
 
-          {/* Preview / Demo Section */}
           <Card className="border-2 border-blue-500 shadow-lg rounded-sm">
             <div className="p-6 bg-blue-50 border-b border-blue-200">
               <div className="flex items-center gap-3 mb-2">
@@ -195,7 +186,6 @@ export default function Trading() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Demo Auto-Trading Control */}
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -215,7 +205,6 @@ export default function Trading() {
                 </div>
               </div>
 
-              {/* Demo Performance Metrics */}
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
                 <h3 className="text-sm font-['Manrope'] font-bold mb-3">Performance Overview</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -238,7 +227,6 @@ export default function Trading() {
                 </div>
               </div>
 
-              {/* Demo Positions */}
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
                 <h3 className="text-sm font-['Manrope'] font-bold mb-3">Your Active Positions</h3>
                 <div className="space-y-2">
@@ -265,7 +253,6 @@ export default function Trading() {
                 </div>
               </div>
 
-              {/* Demo PNL Chart */}
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
                 <h3 className="text-sm font-['Manrope'] font-bold mb-3">24h PNL Tracking Chart</h3>
                 <div className="h-[200px] bg-white rounded border flex items-center justify-center text-gray-400">
@@ -278,7 +265,7 @@ export default function Trading() {
 
               <div className="text-center pt-4">
                 <Button
-                  onClick={() => (window.location.href = '/settings')}
+                  onClick={function () { window.location.href = '/settings'; }}
                   size="lg"
                   className="bg-blue-600 text-white hover:bg-blue-700 rounded-sm px-8 py-4 text-base font-semibold"
                 >
@@ -290,7 +277,6 @@ export default function Trading() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Auto-Trading Control */}
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-6">
               <div className="flex items-center justify-between">
@@ -298,7 +284,7 @@ export default function Trading() {
                   <h2 className="text-xl font-['Manrope'] font-bold mb-1">Auto-Trading</h2>
                   <p className="text-sm text-gray-600">Automatically execute trades based on AI signals</p>
                   <p className="text-xs text-gray-400 font-mono mt-1">
-                    Connected: {userAddress.substring(0, 6)}...{userAddress.substring(userAddress.length - 4)}
+                    {'Connected: ' + userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -327,7 +313,6 @@ export default function Trading() {
             </div>
           </Card>
 
-          {/* Current Positions */}
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7]">
               <h3 className="text-lg font-['Manrope'] font-semibold">Your Positions</h3>
@@ -340,30 +325,31 @@ export default function Trading() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {positions.map((position, idx) => (
-                    <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="font-semibold text-sm">{position.market || 'Position'}</div>
-                          <div className="text-xs text-gray-500">
-                            {position.size} shares @ ${position.avgPrice}
+                  {positions.map(function (position, idx) {
+                    return (
+                      <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-semibold text-sm">{position.market || 'Position'}</div>
+                            <div className="text-xs text-gray-500">
+                              {position.size + ' shares @ $' + position.avgPrice}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <div className={`text-sm font-bold ${(position.pnl ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {(position.pnl ?? 0) >= 0 ? '+' : ''}${position.pnl ?? 0}
+                          <div className="text-right">
+                            <div className={'text-sm font-bold ' + ((position.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
+                              {(position.pnl || 0) >= 0 ? '+' : ''}{'$' + (position.pnl || 0)}
+                            </div>
+                            <div className="text-xs text-gray-500">{'$' + (position.currentValue || 0)}</div>
                           </div>
-                          <div className="text-xs text-gray-500">${position.currentValue ?? 0}</div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           </Card>
 
-          {/* Performance Overview */}
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7] flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -374,7 +360,6 @@ export default function Trading() {
             </div>
           </Card>
 
-          {/* PNL Chart */}
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7]">
               <h3 className="text-lg font-['Manrope'] font-semibold">PNL Tracking (24h)</h3>
@@ -384,7 +369,6 @@ export default function Trading() {
             </div>
           </Card>
 
-          {/* Open Orders */}
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7]">
               <h3 className="text-lg font-['Manrope'] font-semibold">Open Orders</h3>
@@ -396,25 +380,26 @@ export default function Trading() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {openOrders.map((order, idx) => (
-                    <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-semibold">{order.side} Order</div>
-                        <div className="text-xs text-gray-500 font-mono">
-                          {order.size} @ ${order.price}
+                  {openOrders.map(function (order, idx) {
+                    return (
+                      <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-semibold">{order.side + ' Order'}</div>
+                          <div className="text-xs text-gray-500 font-mono">
+                            {order.size + ' @ $' + order.price}
+                          </div>
                         </div>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50">
+                          Cancel
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50">
-                        Cancel
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           </Card>
 
-          {/* Trade History */}
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7]">
               <h3 className="text-lg font-['Manrope'] font-semibold">Recent Trades</h3>
@@ -426,24 +411,26 @@ export default function Trading() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {tradeHistory.map((trade, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0">
-                      <div className="flex items-center gap-2">
-                        {trade.side === 'BUY' ? (
-                          <TrendingUp className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-red-600" />
-                        )}
-                        <div>
-                          <div className="text-sm font-semibold">{trade.side}</div>
-                          <div className="text-xs text-gray-500">{trade.size} @ ${trade.price}</div>
+                  {tradeHistory.map(function (trade, idx) {
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0">
+                        <div className="flex items-center gap-2">
+                          {trade.side === 'BUY' ? (
+                            <TrendingUp className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4 text-red-600" />
+                          )}
+                          <div>
+                            <div className="text-sm font-semibold">{trade.side}</div>
+                            <div className="text-xs text-gray-500">{trade.size + ' @ $' + trade.price}</div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400 font-mono">
+                          {trade.timestamp ? new Date(trade.timestamp).toLocaleString() : '--'}
                         </div>
                       </div>
-                      <div className="text-xs text-gray-400 font-mono">
-                        {trade.timestamp ? new Date(trade.timestamp).toLocaleString() : '--'}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

@@ -6,8 +6,8 @@ function CustomTooltip({ active, payload }) {
     return (
       <div className="bg-white p-3 border border-gray-200 rounded-sm shadow-lg">
         <p className="text-xs font-semibold mb-1">{payload[0].payload.name}</p>
-        <p className="text-xs text-green-600">Buy: ${payload[0].value.toFixed(2)}</p>
-        <p className="text-xs text-red-600">Sell: ${payload[1].value.toFixed(2)}</p>
+        <p className="text-xs text-green-600">{'Buy: $' + payload[0].value.toFixed(2)}</p>
+        <p className="text-xs text-red-600">{'Sell: $' + payload[1].value.toFixed(2)}</p>
       </div>
     );
   }
