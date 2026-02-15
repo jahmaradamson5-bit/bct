@@ -1,3 +1,4 @@
+/* Trading.js – clean rewrite – no useCallback, single tradingChartData */
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Zap, TrendingUp, TrendingDown, Play, Pause, DollarSign, BarChart3 } from 'lucide-react';
