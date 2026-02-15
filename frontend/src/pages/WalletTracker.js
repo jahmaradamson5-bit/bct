@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Wallet, Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Eye, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -112,8 +112,8 @@ export default function WalletTracker() {
   /*  Data fetching                                                      */
   /* ------------------------------------------------------------------ */
 
-  var fetchWallets = useCallback(
-    async function () {
+  useEffect(function () {
+    var doFetch = async function () {
       try {
         var response = await axios.get(API + '/wallets');
         setWallets(toSafeArray(response.data));
@@ -121,13 +121,9 @@ export default function WalletTracker() {
         console.error('Error fetching wallets:', error);
         setWallets([]);
       }
-    },
-    [setWallets]
-  );
-
-  useEffect(function () {
-    fetchWallets();
-  }, [fetchWallets]);
+    };
+    doFetch();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   var addWallet = async function () {
     if (!newWalletAddress || !newWalletLabel) {
