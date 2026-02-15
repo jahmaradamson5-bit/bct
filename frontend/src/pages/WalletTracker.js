@@ -109,80 +109,82 @@ export default function WalletTracker() {
   var chartData = generateChartData();
 
   /* ------------------------------------------------------------------ */
-  /*  Data fetching                                                      */
+  /*  fetchWallets — plain function, NO useCallback                      */
   /* ------------------------------------------------------------------ */
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(function () {
-    var doFetch = async function () {
-      try {
-        var response = await axios.get(API + '/wallets');
+  function fetchWallets() {
+    axios.get(API + '/wallets')
+      .then(function (response) {
         setWallets(toSafeArray(response.data));
-      } catch (error) {
+      })
+      .catch(function (error) {
         console.error('Error fetching wallets:', error);
         setWallets([]);
-      }
-    };
-    doFetch();
-  }, [setWallets]);
+      });
+  }
 
-  var addWallet = async function () {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(function () { fetchWallets(); }, []);
+
+  function addWallet() {
     if (!newWalletAddress || !newWalletLabel) {
       toast.error('Please provide both address and label');
       return;
     }
-    try {
-      await axios.post(API + '/wallets', {
-        address: newWalletAddress,
-        label: newWalletLabel
+    axios.post(API + '/wallets', {
+      address: newWalletAddress,
+      label: newWalletLabel
+    })
+      .then(function () {
+        toast.success('Wallet added successfully');
+        setNewWalletAddress('');
+        setNewWalletLabel('');
+        fetchWallets();
+      })
+      .catch(function (error) {
+        console.error('Error adding wallet:', error);
+        toast.error('Failed to add wallet');
       });
-      toast.success('Wallet added successfully');
-      setNewWalletAddress('');
-      setNewWalletLabel('');
-      fetchWallets();
-    } catch (error) {
-      console.error('Error adding wallet:', error);
-      toast.error('Failed to add wallet');
-    }
-  };
+  }
 
-  var deleteWallet = async function (walletId) {
-    try {
-      await axios.delete(API + '/wallets/' + walletId);
-      toast.success('Wallet removed');
-      fetchWallets();
-      if (selectedWallet && selectedWallet.id === walletId) {
-        setSelectedWallet(null);
-        setWalletDetails(null);
-      }
-    } catch (error) {
-      console.error('Error deleting wallet:', error);
-      toast.error('Failed to remove wallet');
-    }
-  };
+  function deleteWallet(walletId) {
+    axios.delete(API + '/wallets/' + walletId)
+      .then(function () {
+        toast.success('Wallet removed');
+        fetchWallets();
+        if (selectedWallet && selectedWallet.id === walletId) {
+          setSelectedWallet(null);
+          setWalletDetails(null);
+        }
+      })
+      .catch(function (error) {
+        console.error('Error deleting wallet:', error);
+        toast.error('Failed to remove wallet');
+      });
+  }
 
-  var viewWalletDetails = async function (wallet) {
+  function viewWalletDetails(wallet) {
     setSelectedWallet(wallet);
     setLoading(true);
-    try {
-      var results = await Promise.all([
-        axios.get(API + '/wallets/' + wallet.address + '/detailed'),
-        axios.get(API + '/wallets/' + wallet.address + '/activity-feed')
-      ]);
-      setWalletDetails(results[0].data || null);
-      setActivityFeed(toSafeArray(results[1].data));
-    } catch (error) {
-      console.error('Error fetching wallet details:', error);
-      toast.error('Failed to load wallet details');
-    } finally {
-      setLoading(false);
-    }
-  };
+    Promise.all([
+      axios.get(API + '/wallets/' + wallet.address + '/detailed'),
+      axios.get(API + '/wallets/' + wallet.address + '/activity-feed')
+    ])
+      .then(function (results) {
+        setWalletDetails(results[0].data || null);
+        setActivityFeed(toSafeArray(results[1].data));
+      })
+      .catch(function (error) {
+        console.error('Error fetching wallet details:', error);
+        toast.error('Failed to load wallet details');
+      })
+      .finally(function () {
+        setLoading(false);
+      });
+  }
 
   /* ------------------------------------------------------------------ */
   /*  Render                                                             */
   /* ------------------------------------------------------------------ */
-
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
