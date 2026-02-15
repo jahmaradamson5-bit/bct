@@ -122,7 +122,7 @@ export default function WalletTracker() {
         setWallets([]);
       }
     },
-    []
+    [setWallets]
   );
 
   useEffect(function () {
