@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Zap, TrendingUp, TrendingDown, Play, Pause, DollarSign, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -10,9 +10,11 @@ import { toast } from 'sonner';
 import PnLChart from '../components/charts/PnLChart';
 import PerformanceMetrics from '../components/charts/PerformanceMetrics';
 
-var BACKEND_URL = process.env.REACT_APP_BACKEND_URL && process.env.REACT_APP_BACKEND_URL !== 'undefined'
-  ? process.env.REACT_APP_BACKEND_URL.replace(/\/+$/, '')
-  : '';
+var BACKEND_URL =
+  process.env.REACT_APP_BACKEND_URL &&
+  process.env.REACT_APP_BACKEND_URL !== 'undefined'
+    ? process.env.REACT_APP_BACKEND_URL.replace(/\/+$/, '')
+    : '';
 var API = BACKEND_URL + '/api';
 
 export default function Trading() {
@@ -23,70 +25,84 @@ export default function Trading() {
   var _e = useState([]), openOrders = _e[0], setOpenOrders = _e[1];
   var _f = useState([]), tradeHistory = _f[0], setTradeHistory = _f[1];
 
-  /* ---- Data fetching (plain functions, no hooks) ---- */
+  /* ---- useCallback wrappers with complete dependency arrays ---------- */
 
-  async function checkTradingStatus() {
-    try {
-      var response = await axios.get(API + '/trading/status');
-      setIsConnected(response.data.connected);
-      setUserAddress(response.data.address || '');
-    } catch (error) {
-      console.error('Error checking trading status:', error);
-    }
-  }
+  var checkTradingStatus = useCallback(function () {
+    axios
+      .get(API + '/trading/status')
+      .then(function (response) {
+        setIsConnected(response.data.connected);
+        setUserAddress(response.data.address || '');
+      })
+      .catch(function (error) {
+        console.error('Error checking trading status:', error);
+      });
+  }, [setIsConnected, setUserAddress]);
 
-  async function fetchPositions() {
-    try {
-      var response = await axios.get(API + '/trading/positions');
-      setPositions(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error('Error fetching positions:', error);
-      setPositions([]);
-    }
-  }
+  var fetchPositions = useCallback(function () {
+    axios
+      .get(API + '/trading/positions')
+      .then(function (response) {
+        setPositions(Array.isArray(response.data) ? response.data : []);
+      })
+      .catch(function (error) {
+        console.error('Error fetching positions:', error);
+        setPositions([]);
+      });
+  }, [setPositions]);
 
-  async function fetchOpenOrders() {
-    try {
-      var response = await axios.get(API + '/trading/orders');
-      setOpenOrders(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      setOpenOrders([]);
-    }
-  }
+  var fetchOpenOrders = useCallback(function () {
+    axios
+      .get(API + '/trading/orders')
+      .then(function (response) {
+        setOpenOrders(Array.isArray(response.data) ? response.data : []);
+      })
+      .catch(function (error) {
+        console.error('Error fetching orders:', error);
+        setOpenOrders([]);
+      });
+  }, [setOpenOrders]);
 
-  async function fetchTradeHistory() {
-    try {
-      var response = await axios.get(API + '/trading/history?limit=50');
-      setTradeHistory(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error('Error fetching trade history:', error);
-      setTradeHistory([]);
-    }
-  }
+  var fetchTradeHistory = useCallback(function () {
+    axios
+      .get(API + '/trading/history?limit=50')
+      .then(function (response) {
+        setTradeHistory(Array.isArray(response.data) ? response.data : []);
+      })
+      .catch(function (error) {
+        console.error('Error fetching trade history:', error);
+        setTradeHistory([]);
+      });
+  }, [setTradeHistory]);
 
-  /* ---- Effects ---- */
+  /* ---- Effects with complete dependency arrays ----------------------- */
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(function () {
-    checkTradingStatus();
-  }, []);
+  useEffect(
+    function () {
+      checkTradingStatus();
+    },
+    [checkTradingStatus]
+  );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(function () {
-    if (isConnected) {
-      fetchPositions();
-      fetchOpenOrders();
-      fetchTradeHistory();
-      var interval = setInterval(function () {
+  useEffect(
+    function () {
+      if (isConnected) {
         fetchPositions();
         fetchOpenOrders();
-      }, 10000);
-      return function () { clearInterval(interval); };
-    }
-  }, [isConnected]);
+        fetchTradeHistory();
+        var interval = setInterval(function () {
+          fetchPositions();
+          fetchOpenOrders();
+        }, 10000);
+        return function () {
+          clearInterval(interval);
+        };
+      }
+    },
+    [isConnected, fetchPositions, fetchOpenOrders, fetchTradeHistory]
+  );
 
-  /* ---- Toggle handler (self-contained) ---- */
+  /* ---- toggleAutoTrading (self-contained, nothing else inside) ------- */
 
   function toggleAutoTrading() {
     if (!isConnected) {
@@ -94,10 +110,12 @@ export default function Trading() {
       return;
     }
     setAutoTradingEnabled(!autoTradingEnabled);
-    toast.success(autoTradingEnabled ? 'Auto-trading disabled' : 'Auto-trading enabled');
+    toast.success(
+      autoTradingEnabled ? 'Auto-trading disabled' : 'Auto-trading enabled'
+    );
   }
 
-  /* ---- Chart data generator (component scope) ---- */
+  /* ---- Chart data generator (component scope) ----------------------- */
 
   function generateTradingChartData() {
     var safePositions = Array.isArray(positions) ? positions : [];
@@ -110,13 +128,19 @@ export default function Trading() {
       cumulativePnl += Math.random() * 10 - 4;
       pnlHistory.push({
         time: time.getHours() + ':00',
-        pnl: parseFloat(cumulativePnl.toFixed(2))
+        pnl: parseFloat(cumulativePnl.toFixed(2)),
       });
     }
 
-    var totalValue = safePositions.reduce(function (sum, p) { return sum + (p.currentValue || 0); }, 0);
-    var totalPnl = safePositions.reduce(function (sum, p) { return sum + (p.pnl || 0); }, 0);
-    var winningTrades = safeHistory.filter(function (t) { return t.pnl && t.pnl > 0; }).length;
+    var totalValue = safePositions.reduce(function (sum, p) {
+      return sum + (p.currentValue || 0);
+    }, 0);
+    var totalPnl = safePositions.reduce(function (sum, p) {
+      return sum + (p.pnl || 0);
+    }, 0);
+    var winningTrades = safeHistory.filter(function (t) {
+      return t.pnl && t.pnl > 0;
+    }).length;
     var totalTrades = safeHistory.length;
 
     var metrics = {
@@ -125,23 +149,44 @@ export default function Trading() {
       winRate: totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0,
       avgReturn: totalValue > 0 ? (totalPnl / totalValue) * 100 : 0,
       totalTrades: totalTrades,
-      bestTrade: safeHistory.length > 0 ? Math.max.apply(null, safeHistory.map(function (t) { return t.pnl || 0; })) : 0,
-      worstTrade: safeHistory.length > 0 ? Math.min.apply(null, safeHistory.map(function (t) { return t.pnl || 0; })) : 0
+      bestTrade:
+        safeHistory.length > 0
+          ? Math.max.apply(
+              null,
+              safeHistory.map(function (t) {
+                return t.pnl || 0;
+              })
+            )
+          : 0,
+      worstTrade:
+        safeHistory.length > 0
+          ? Math.min.apply(
+              null,
+              safeHistory.map(function (t) {
+                return t.pnl || 0;
+              })
+            )
+          : 0,
     };
 
     return { pnlHistory: pnlHistory, metrics: metrics };
   }
 
-  /* ---- SINGLE declaration of tradingChartData ---- */
+  /* ---- SINGLE declaration of tradingChartData ----------------------- */
   var defaultMetrics = {
-    totalValue: 0, totalPnl: 0, winRate: 0,
-    avgReturn: 0, totalTrades: 0, bestTrade: 0, worstTrade: 0
+    totalValue: 0,
+    totalPnl: 0,
+    winRate: 0,
+    avgReturn: 0,
+    totalTrades: 0,
+    bestTrade: 0,
+    worstTrade: 0,
   };
   var tradingChartData = isConnected
     ? generateTradingChartData()
     : { pnlHistory: [], metrics: defaultMetrics };
 
-  /* ---- Render ---- */
+  /* ---- Render -------------------------------------------------------- */
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
@@ -152,13 +197,18 @@ export default function Trading() {
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-8 h-8 text-gray-400" />
               </div>
-              <h2 className="text-2xl font-['Manrope'] font-bold mb-2">Connect Your Polymarket Account</h2>
+              <h2 className="text-2xl font-['Manrope'] font-bold mb-2">
+                Connect Your Polymarket Account
+              </h2>
               <p className="text-gray-600 mb-6">
-                To enable automated trading, you need to connect your Polymarket account.
-                Go to Settings to configure your account credentials.
+                To enable automated trading, you need to connect your
+                Polymarket account. Go to Settings to configure your account
+                credentials.
               </p>
               <Button
-                onClick={function () { window.location.href = '/settings'; }}
+                onClick={function () {
+                  window.location.href = '/settings';
+                }}
                 className="bg-black text-white hover:bg-gray-800 rounded-sm px-6 py-3"
               >
                 Go to Settings
@@ -170,10 +220,13 @@ export default function Trading() {
             <div className="p-6 bg-blue-50 border-b border-blue-200">
               <div className="flex items-center gap-3 mb-2">
                 <BarChart3 className="w-6 h-6 text-blue-600" />
-                <h2 className="text-xl font-['Manrope'] font-bold">Preview: Auto-Trading Features</h2>
+                <h2 className="text-xl font-['Manrope'] font-bold">
+                  Preview: Auto-Trading Features
+                </h2>
               </div>
               <p className="text-sm text-blue-800">
-                This is what you will see after connecting your account. Connect now to unlock automated trading!
+                This is what you will see after connecting your account.
+                Connect now to unlock automated trading!
               </p>
             </div>
 
@@ -181,64 +234,98 @@ export default function Trading() {
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-['Manrope'] font-bold mb-1">Auto-Trading Toggle</h3>
-                    <p className="text-sm text-gray-600">Enable/disable automated trade execution based on AI signals</p>
+                    <h3 className="text-lg font-['Manrope'] font-bold mb-1">
+                      Auto-Trading Toggle
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Enable/disable automated trade execution based on AI
+                      signals
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-gray-400">Enabled</span>
+                    <span className="text-sm font-semibold text-gray-400">
+                      Enabled
+                    </span>
                     <Switch disabled className="opacity-50" />
                   </div>
                 </div>
                 <div className="p-3 bg-green-50 border border-green-200 rounded-sm">
                   <div className="flex items-center gap-2 text-green-800">
                     <Play className="w-4 h-4" />
-                    <span className="text-sm font-semibold">When active, bot automatically trades on 70%+ confidence signals</span>
+                    <span className="text-sm font-semibold">
+                      When active, bot automatically trades on 70%+ confidence
+                      signals
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
-                <h3 className="text-sm font-['Manrope'] font-bold mb-3">Performance Overview</h3>
+                <h3 className="text-sm font-['Manrope'] font-bold mb-3">
+                  Performance Overview
+                </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="p-3 bg-white rounded-sm border">
-                    <div className="text-xs text-gray-500 mb-1">Total Value</div>
+                    <div className="text-xs text-gray-500 mb-1">
+                      Total Value
+                    </div>
                     <div className="text-xl font-bold">$1,245.00</div>
                   </div>
                   <div className="p-3 bg-white rounded-sm border">
                     <div className="text-xs text-gray-500 mb-1">Total PNL</div>
-                    <div className="text-xl font-bold text-green-600">+$156.23</div>
+                    <div className="text-xl font-bold text-green-600">
+                      +$156.23
+                    </div>
                   </div>
                   <div className="p-3 bg-white rounded-sm border">
                     <div className="text-xs text-gray-500 mb-1">Win Rate</div>
                     <div className="text-xl font-bold">73.5%</div>
                   </div>
                   <div className="p-3 bg-white rounded-sm border">
-                    <div className="text-xs text-gray-500 mb-1">Avg Return</div>
-                    <div className="text-xl font-bold text-green-600">+12.5%</div>
+                    <div className="text-xs text-gray-500 mb-1">
+                      Avg Return
+                    </div>
+                    <div className="text-xl font-bold text-green-600">
+                      +12.5%
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
-                <h3 className="text-sm font-['Manrope'] font-bold mb-3">Your Active Positions</h3>
+                <h3 className="text-sm font-['Manrope'] font-bold mb-3">
+                  Your Active Positions
+                </h3>
                 <div className="space-y-2">
                   <div className="p-3 bg-white rounded-sm border flex justify-between items-center">
                     <div>
-                      <div className="font-semibold text-sm">Bitcoin $100k by March</div>
-                      <div className="text-xs text-gray-500">250 shares @ $0.68</div>
+                      <div className="font-semibold text-sm">
+                        Bitcoin $100k by March
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        250 shares @ $0.68
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-green-600">+$24.50</div>
+                      <div className="text-sm font-bold text-green-600">
+                        +$24.50
+                      </div>
                       <div className="text-xs text-gray-500">$170.00</div>
                     </div>
                   </div>
                   <div className="p-3 bg-white rounded-sm border flex justify-between items-center">
                     <div>
-                      <div className="font-semibold text-sm">Ethereum $5k by Q2</div>
-                      <div className="text-xs text-gray-500">180 shares @ $0.55</div>
+                      <div className="font-semibold text-sm">
+                        Ethereum $5k by Q2
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        180 shares @ $0.55
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-green-600">+$12.40</div>
+                      <div className="text-sm font-bold text-green-600">
+                        +$12.40
+                      </div>
                       <div className="text-xs text-gray-500">$99.00</div>
                     </div>
                   </div>
@@ -246,18 +333,24 @@ export default function Trading() {
               </div>
 
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
-                <h3 className="text-sm font-['Manrope'] font-bold mb-3">24h PNL Tracking Chart</h3>
+                <h3 className="text-sm font-['Manrope'] font-bold mb-3">
+                  24h PNL Tracking Chart
+                </h3>
                 <div className="h-[200px] bg-white rounded border flex items-center justify-center text-gray-400">
                   <div className="text-center">
                     <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Interactive PNL chart will appear here</p>
+                    <p className="text-sm">
+                      Interactive PNL chart will appear here
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="text-center pt-4">
                 <Button
-                  onClick={function () { window.location.href = '/settings'; }}
+                  onClick={function () {
+                    window.location.href = '/settings';
+                  }}
                   size="lg"
                   className="bg-blue-600 text-white hover:bg-blue-700 rounded-sm px-8 py-4 text-base font-semibold"
                 >
@@ -273,10 +366,17 @@ export default function Trading() {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-['Manrope'] font-bold mb-1">Auto-Trading</h2>
-                  <p className="text-sm text-gray-600">Automatically execute trades based on AI signals</p>
+                  <h2 className="text-xl font-['Manrope'] font-bold mb-1">
+                    Auto-Trading
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Automatically execute trades based on AI signals
+                  </p>
                   <p className="text-xs text-gray-400 font-mono mt-1">
-                    {'Connected: ' + userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4)}
+                    {'Connected: ' +
+                      userAddress.substring(0, 6) +
+                      '...' +
+                      userAddress.substring(userAddress.length - 4)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -295,10 +395,13 @@ export default function Trading() {
                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-sm">
                   <div className="flex items-center gap-2 text-green-800">
                     <Play className="w-4 h-4" />
-                    <span className="text-sm font-semibold">Auto-trading is active</span>
+                    <span className="text-sm font-semibold">
+                      Auto-trading is active
+                    </span>
                   </div>
                   <p className="text-xs text-green-700 mt-1">
-                    The bot will automatically place trades when AI signals reach 70%+ confidence
+                    The bot will automatically place trades when AI signals
+                    reach 70%+ confidence
                   </p>
                 </div>
               )}
@@ -307,7 +410,9 @@ export default function Trading() {
 
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7]">
-              <h3 className="text-lg font-['Manrope'] font-semibold">Your Positions</h3>
+              <h3 className="text-lg font-['Manrope'] font-semibold">
+                Your Positions
+              </h3>
             </div>
             <div className="p-4">
               {!Array.isArray(positions) || positions.length === 0 ? (
@@ -319,19 +424,34 @@ export default function Trading() {
                 <div className="space-y-2">
                   {positions.map(function (position, idx) {
                     return (
-                      <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm">
+                      <div
+                        key={idx}
+                        className="p-3 border border-[#E4E4E7] rounded-sm"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="font-semibold text-sm">{position.market || 'Position'}</div>
+                            <div className="font-semibold text-sm">
+                              {position.market || 'Position'}
+                            </div>
                             <div className="text-xs text-gray-500">
                               {position.size + ' shares @ $' + position.avgPrice}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className={'text-sm font-bold ' + ((position.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                              {(position.pnl || 0) >= 0 ? '+' : ''}{'$' + (position.pnl || 0)}
+                            <div
+                              className={
+                                'text-sm font-bold ' +
+                                ((position.pnl || 0) >= 0
+                                  ? 'text-green-600'
+                                  : 'text-red-600')
+                              }
+                            >
+                              {(position.pnl || 0) >= 0 ? '+' : ''}
+                              {'$' + (position.pnl || 0)}
                             </div>
-                            <div className="text-xs text-gray-500">{'$' + (position.currentValue || 0)}</div>
+                            <div className="text-xs text-gray-500">
+                              {'$' + (position.currentValue || 0)}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -345,7 +465,9 @@ export default function Trading() {
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7] flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-blue-600" />
-              <h3 className="text-lg font-['Manrope'] font-semibold">Performance Overview</h3>
+              <h3 className="text-lg font-['Manrope'] font-semibold">
+                Performance Overview
+              </h3>
             </div>
             <div className="p-4">
               <PerformanceMetrics metrics={tradingChartData.metrics} />
@@ -354,7 +476,9 @@ export default function Trading() {
 
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7]">
-              <h3 className="text-lg font-['Manrope'] font-semibold">PNL Tracking (24h)</h3>
+              <h3 className="text-lg font-['Manrope'] font-semibold">
+                PNL Tracking (24h)
+              </h3>
             </div>
             <div className="p-4">
               <PnLChart data={tradingChartData.pnlHistory} />
@@ -363,7 +487,9 @@ export default function Trading() {
 
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7]">
-              <h3 className="text-lg font-['Manrope'] font-semibold">Open Orders</h3>
+              <h3 className="text-lg font-['Manrope'] font-semibold">
+                Open Orders
+              </h3>
             </div>
             <div className="p-4">
               {!Array.isArray(openOrders) || openOrders.length === 0 ? (
@@ -374,14 +500,23 @@ export default function Trading() {
                 <div className="space-y-2">
                   {openOrders.map(function (order, idx) {
                     return (
-                      <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm flex items-center justify-between">
+                      <div
+                        key={idx}
+                        className="p-3 border border-[#E4E4E7] rounded-sm flex items-center justify-between"
+                      >
                         <div>
-                          <div className="text-sm font-semibold">{order.side + ' Order'}</div>
+                          <div className="text-sm font-semibold">
+                            {order.side + ' Order'}
+                          </div>
                           <div className="text-xs text-gray-500 font-mono">
                             {order.size + ' @ $' + order.price}
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50"
+                        >
                           Cancel
                         </Button>
                       </div>
@@ -394,7 +529,9 @@ export default function Trading() {
 
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7]">
-              <h3 className="text-lg font-['Manrope'] font-semibold">Recent Trades</h3>
+              <h3 className="text-lg font-['Manrope'] font-semibold">
+                Recent Trades
+              </h3>
             </div>
             <div className="p-4 max-h-[300px] overflow-y-auto">
               {!Array.isArray(tradeHistory) || tradeHistory.length === 0 ? (
@@ -405,7 +542,10 @@ export default function Trading() {
                 <div className="space-y-2">
                   {tradeHistory.map(function (trade, idx) {
                     return (
-                      <div key={idx} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0">
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0"
+                      >
                         <div className="flex items-center gap-2">
                           {trade.side === 'BUY' ? (
                             <TrendingUp className="w-4 h-4 text-green-600" />
@@ -413,12 +553,18 @@ export default function Trading() {
                             <TrendingDown className="w-4 h-4 text-red-600" />
                           )}
                           <div>
-                            <div className="text-sm font-semibold">{trade.side}</div>
-                            <div className="text-xs text-gray-500">{trade.size + ' @ $' + trade.price}</div>
+                            <div className="text-sm font-semibold">
+                              {trade.side}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {trade.size + ' @ $' + trade.price}
+                            </div>
                           </div>
                         </div>
                         <div className="text-xs text-gray-400 font-mono">
-                          {trade.timestamp ? new Date(trade.timestamp).toLocaleString() : '--'}
+                          {trade.timestamp
+                            ? new Date(trade.timestamp).toLocaleString()
+                            : '--'}
                         </div>
                       </div>
                     );

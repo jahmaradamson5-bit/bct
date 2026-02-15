@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Wallet, Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Eye, BarChart3 } from 'lucide-react';
+import {
+  Wallet,
+  Plus,
+  Trash2,
+  TrendingUp,
+  TrendingDown,
+  RefreshCw,
+  Eye,
+  BarChart3,
+} from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
@@ -12,12 +21,12 @@ import BuySellComparison from '../components/charts/BuySellComparison';
 import PerformanceMetrics from '../components/charts/PerformanceMetrics';
 
 var BACKEND_URL =
-  process.env.REACT_APP_BACKEND_URL && process.env.REACT_APP_BACKEND_URL !== 'undefined'
+  process.env.REACT_APP_BACKEND_URL &&
+  process.env.REACT_APP_BACKEND_URL !== 'undefined'
     ? process.env.REACT_APP_BACKEND_URL.replace(/\/+$/, '')
     : '';
 var API = BACKEND_URL + '/api';
 
-/** Safely coerce any API response into an array */
 function toSafeArray(data) {
   if (Array.isArray(data)) return data;
   if (data && typeof data === 'object') {
@@ -36,23 +45,36 @@ export default function WalletTracker() {
   var _f = useState(''), newWalletLabel = _f[0], setNewWalletLabel = _f[1];
   var _g = useState(false), loading = _g[0], setLoading = _g[1];
 
-  /* ---- Chart data generator (component scope) ---- */
+  /* ---- Chart data generator (component scope) ----------------------- */
+
   function generateChartData() {
-    var emptyResult = { pnlHistory: [], distribution: [], buySell: [], metrics: {} };
+    var emptyResult = {
+      pnlHistory: [],
+      distribution: [],
+      buySell: [],
+      metrics: {},
+    };
     if (!walletDetails || typeof walletDetails !== 'object') return emptyResult;
 
-    var buyingPositions = Array.isArray(walletDetails.buying_positions) ? walletDetails.buying_positions : [];
-    var sellingPositions = Array.isArray(walletDetails.selling_positions) ? walletDetails.selling_positions : [];
+    var buyingPositions = Array.isArray(walletDetails.buying_positions)
+      ? walletDetails.buying_positions
+      : [];
+    var sellingPositions = Array.isArray(walletDetails.selling_positions)
+      ? walletDetails.selling_positions
+      : [];
     var allPositions = buyingPositions.concat(sellingPositions);
 
     var pnlHistory = [];
     var baseTime = Date.now();
     for (var i = 0; i < 24; i++) {
       var time = new Date(baseTime - (23 - i) * 3600000);
-      var pnl = (walletDetails.total_pnl || 0) * (0.5 + (i / 24) * 0.5) + Math.random() * 5 - 2.5;
+      var pnl =
+        (walletDetails.total_pnl || 0) * (0.5 + (i / 24) * 0.5) +
+        Math.random() * 5 -
+        2.5;
       pnlHistory.push({
         time: time.getHours() + ':00',
-        pnl: parseFloat(pnl.toFixed(2))
+        pnl: parseFloat(pnl.toFixed(2)),
       });
     }
 
@@ -61,7 +83,7 @@ export default function WalletTracker() {
       if (idx < 5) {
         distribution.push({
           name: (pos.market || 'Position ' + (idx + 1)).substring(0, 20),
-          value: Math.abs(pos.current_value || 0)
+          value: Math.abs(pos.current_value || 0),
         });
       }
     });
@@ -69,7 +91,7 @@ export default function WalletTracker() {
       if (idx < 5) {
         distribution.push({
           name: (pos.market || 'Position ' + (idx + 1)).substring(0, 20),
-          value: Math.abs(pos.current_value || 0)
+          value: Math.abs(pos.current_value || 0),
         });
       }
     });
@@ -77,58 +99,88 @@ export default function WalletTracker() {
     var markets = {};
     buyingPositions.forEach(function (pos) {
       var marketType = pos.market ? pos.market.split(' ')[0] : 'Other';
-      if (!markets[marketType]) markets[marketType] = { name: marketType, buy: 0, sell: 0 };
+      if (!markets[marketType])
+        markets[marketType] = { name: marketType, buy: 0, sell: 0 };
       markets[marketType].buy += Math.abs(pos.current_value || 0);
     });
     sellingPositions.forEach(function (pos) {
       var marketType = pos.market ? pos.market.split(' ')[0] : 'Other';
-      if (!markets[marketType]) markets[marketType] = { name: marketType, buy: 0, sell: 0 };
+      if (!markets[marketType])
+        markets[marketType] = { name: marketType, buy: 0, sell: 0 };
       markets[marketType].sell += Math.abs(pos.current_value || 0);
     });
     var buySell = Object.values(markets).slice(0, 5);
 
     var totalPositions = walletDetails.total_positions || 0;
-    var winningPositions = allPositions.filter(function (p) { return (p.unrealized_pnl || 0) > 0; }).length;
-    var pnlValues = allPositions.map(function (p) { return p.unrealized_pnl || 0; });
+    var winningPositions = allPositions.filter(function (p) {
+      return (p.unrealized_pnl || 0) > 0;
+    }).length;
+    var pnlValues = allPositions.map(function (p) {
+      return p.unrealized_pnl || 0;
+    });
 
     var metrics = {
       totalValue: walletDetails.total_value || 0,
       totalPnl: walletDetails.total_pnl || 0,
-      winRate: totalPositions > 0 ? (winningPositions / totalPositions) * 100 : 0,
-      avgReturn: walletDetails.total_value > 0 ? ((walletDetails.total_pnl / walletDetails.total_value) * 100) : 0,
+      winRate:
+        totalPositions > 0 ? (winningPositions / totalPositions) * 100 : 0,
+      avgReturn:
+        walletDetails.total_value > 0
+          ? (walletDetails.total_pnl / walletDetails.total_value) * 100
+          : 0,
       totalTrades: totalPositions,
-      bestTrade: pnlValues.length > 0 ? Math.max.apply(null, pnlValues) : 0,
-      worstTrade: pnlValues.length > 0 ? Math.min.apply(null, pnlValues) : 0
+      bestTrade:
+        pnlValues.length > 0 ? Math.max.apply(null, pnlValues) : 0,
+      worstTrade:
+        pnlValues.length > 0 ? Math.min.apply(null, pnlValues) : 0,
     };
 
-    return { pnlHistory: pnlHistory, distribution: distribution, buySell: buySell, metrics: metrics };
+    return {
+      pnlHistory: pnlHistory,
+      distribution: distribution,
+      buySell: buySell,
+      metrics: metrics,
+    };
   }
 
   var chartData = generateChartData();
 
-  /* ---- fetchWallets -- plain async function, NO useCallback ---- */
-  async function fetchWallets() {
-    try {
-      var response = await axios.get(API + '/wallets');
-      setWallets(toSafeArray(response.data));
-    } catch (error) {
-      console.error('Error fetching wallets:', error);
-      setWallets([]);
-    }
-  }
+  /* ---- fetchWallets with useCallback + proper deps ------------------ */
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(function () { fetchWallets(); }, []);
+  var fetchWallets = useCallback(
+    function () {
+      axios
+        .get(API + '/wallets')
+        .then(function (response) {
+          setWallets(toSafeArray(response.data));
+        })
+        .catch(function (error) {
+          console.error('Error fetching wallets:', error);
+          setWallets([]);
+        });
+    },
+    [setWallets]
+  );
+
+  useEffect(
+    function () {
+      fetchWallets();
+    },
+    [fetchWallets]
+  );
+
+  /* ---- Wallet CRUD -------------------------------------------------- */
 
   function addWallet() {
     if (!newWalletAddress || !newWalletLabel) {
       toast.error('Please provide both address and label');
       return;
     }
-    axios.post(API + '/wallets', {
-      address: newWalletAddress,
-      label: newWalletLabel
-    })
+    axios
+      .post(API + '/wallets', {
+        address: newWalletAddress,
+        label: newWalletLabel,
+      })
       .then(function () {
         toast.success('Wallet added successfully');
         setNewWalletAddress('');
@@ -142,7 +194,8 @@ export default function WalletTracker() {
   }
 
   function deleteWallet(walletId) {
-    axios.delete(API + '/wallets/' + walletId)
+    axios
+      .delete(API + '/wallets/' + walletId)
       .then(function () {
         toast.success('Wallet removed');
         fetchWallets();
@@ -162,7 +215,7 @@ export default function WalletTracker() {
     setLoading(true);
     Promise.all([
       axios.get(API + '/wallets/' + wallet.address + '/detailed'),
-      axios.get(API + '/wallets/' + wallet.address + '/activity-feed')
+      axios.get(API + '/wallets/' + wallet.address + '/activity-feed'),
     ])
       .then(function (results) {
         setWalletDetails(results[0].data || null);
@@ -177,7 +230,8 @@ export default function WalletTracker() {
       });
   }
 
-  /* ---- Render ---- */
+  /* ---- Render -------------------------------------------------------- */
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -186,21 +240,27 @@ export default function WalletTracker() {
           <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
             <div className="p-4 border-b border-[#E4E4E7] flex items-center gap-2">
               <Wallet className="w-5 h-5" />
-              <h2 className="text-xl font-['Manrope'] font-semibold tracking-tight">Tracked Wallets</h2>
+              <h2 className="text-xl font-['Manrope'] font-semibold tracking-tight">
+                Tracked Wallets
+              </h2>
             </div>
             <div className="p-4">
               <div className="space-y-2 mb-4" data-testid="add-wallet-form">
                 <Input
                   placeholder="Wallet Address (0x...)"
                   value={newWalletAddress}
-                  onChange={function (e) { setNewWalletAddress(e.target.value); }}
+                  onChange={function (e) {
+                    setNewWalletAddress(e.target.value);
+                  }}
                   className="font-mono text-xs rounded-sm border-gray-300"
                   data-testid="wallet-address-input"
                 />
                 <Input
                   placeholder="Label (e.g., Whale #1)"
                   value={newWalletLabel}
-                  onChange={function (e) { setNewWalletLabel(e.target.value); }}
+                  onChange={function (e) {
+                    setNewWalletLabel(e.target.value);
+                  }}
                   className="rounded-sm border-gray-300"
                   data-testid="wallet-label-input"
                 />
@@ -214,7 +274,10 @@ export default function WalletTracker() {
                 </Button>
               </div>
 
-              <div className="space-y-2 max-h-[600px] overflow-y-auto" data-testid="wallet-list">
+              <div
+                className="space-y-2 max-h-[600px] overflow-y-auto"
+                data-testid="wallet-list"
+              >
                 {!Array.isArray(wallets) || wallets.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
                     <Wallet className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -225,15 +288,25 @@ export default function WalletTracker() {
                     return (
                       <div
                         key={wallet.id}
-                        className={'p-3 border border-[#E4E4E7] rounded-sm hover:bg-gray-50 transition-colors cursor-pointer ' +
-                          (selectedWallet && selectedWallet.id === wallet.id ? 'bg-gray-50 border-black' : '')}
-                        onClick={function () { viewWalletDetails(wallet); }}
+                        className={
+                          'p-3 border border-[#E4E4E7] rounded-sm hover:bg-gray-50 transition-colors cursor-pointer ' +
+                          (selectedWallet && selectedWallet.id === wallet.id
+                            ? 'bg-gray-50 border-black'
+                            : '')
+                        }
+                        onClick={function () {
+                          viewWalletDetails(wallet);
+                        }}
                         data-testid={'wallet-item-' + index}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm mb-1">{wallet.label}</div>
-                            <div className="font-mono text-xs text-gray-500 truncate">{wallet.address}</div>
+                            <div className="font-semibold text-sm mb-1">
+                              {wallet.label}
+                            </div>
+                            <div className="font-mono text-xs text-gray-500 truncate">
+                              {wallet.address}
+                            </div>
                           </div>
                           <Button
                             variant="ghost"
@@ -263,44 +336,86 @@ export default function WalletTracker() {
             <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
               <div className="p-12 text-center text-gray-400">
                 <Eye className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                <h3 className="text-lg font-semibold mb-2">Select a wallet to view details</h3>
-                <p className="text-sm">Click on a wallet from the list to see positions, PNL, and activity</p>
+                <h3 className="text-lg font-semibold mb-2">
+                  Select a wallet to view details
+                </h3>
+                <p className="text-sm">
+                  Click on a wallet from the list to see positions, PNL, and
+                  activity
+                </p>
               </div>
             </Card>
           ) : loading ? (
             <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
               <div className="p-12 text-center">
                 <RefreshCw className="w-12 h-12 mx-auto mb-4 animate-spin text-gray-400" />
-                <p className="text-sm text-gray-500">Loading wallet details...</p>
+                <p className="text-sm text-gray-500">
+                  Loading wallet details...
+                </p>
               </div>
             </Card>
           ) : walletDetails ? (
             <div className="space-y-4">
-              <Card className="border border-[#E4E4E7] shadow-sm rounded-sm" data-testid="wallet-summary">
+              <Card
+                className="border border-[#E4E4E7] shadow-sm rounded-sm"
+                data-testid="wallet-summary"
+              >
                 <div className="p-4 border-b border-[#E4E4E7]">
-                  <h2 className="text-xl font-['Manrope'] font-semibold">{selectedWallet.label}</h2>
-                  <p className="text-xs font-mono text-gray-500">{selectedWallet.address}</p>
+                  <h2 className="text-xl font-['Manrope'] font-semibold">
+                    {selectedWallet.label}
+                  </h2>
+                  <p className="text-xs font-mono text-gray-500">
+                    {selectedWallet.address}
+                  </p>
                 </div>
                 <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Total Value</div>
-                    <div className="text-2xl font-['Manrope'] font-bold">{'$' + (walletDetails.total_value || 0).toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Total PNL</div>
-                    <div className={'text-2xl font-bold ' + ((walletDetails.total_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                      {(walletDetails.total_pnl || 0) >= 0 ? '+' : ''}{'$' + (walletDetails.total_pnl || 0).toFixed(2)}
+                    <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">
+                      Total Value
+                    </div>
+                    <div className="text-2xl font-['Manrope'] font-bold">
+                      {'$' + (walletDetails.total_value || 0).toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Unrealized PNL</div>
-                    <div className={'text-xl font-semibold ' + ((walletDetails.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                      {(walletDetails.unrealized_pnl || 0) >= 0 ? '+' : ''}{'$' + (walletDetails.unrealized_pnl || 0).toFixed(2)}
+                    <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">
+                      Total PNL
+                    </div>
+                    <div
+                      className={
+                        'text-2xl font-bold ' +
+                        ((walletDetails.total_pnl || 0) >= 0
+                          ? 'text-green-600'
+                          : 'text-red-600')
+                      }
+                    >
+                      {(walletDetails.total_pnl || 0) >= 0 ? '+' : ''}
+                      {'$' + (walletDetails.total_pnl || 0).toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Positions</div>
-                    <div className="text-2xl font-['Manrope'] font-bold">{walletDetails.total_positions || 0}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">
+                      Unrealized PNL
+                    </div>
+                    <div
+                      className={
+                        'text-xl font-semibold ' +
+                        ((walletDetails.unrealized_pnl || 0) >= 0
+                          ? 'text-green-600'
+                          : 'text-red-600')
+                      }
+                    >
+                      {(walletDetails.unrealized_pnl || 0) >= 0 ? '+' : ''}
+                      {'$' + (walletDetails.unrealized_pnl || 0).toFixed(2)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">
+                      Positions
+                    </div>
+                    <div className="text-2xl font-['Manrope'] font-bold">
+                      {walletDetails.total_positions || 0}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -308,7 +423,9 @@ export default function WalletTracker() {
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                 <div className="p-4 border-b border-[#E4E4E7] flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-lg font-['Manrope'] font-semibold">Performance Metrics</h3>
+                  <h3 className="text-lg font-['Manrope'] font-semibold">
+                    Performance Metrics
+                  </h3>
                 </div>
                 <div className="p-4">
                   <PerformanceMetrics metrics={chartData.metrics} />
@@ -318,7 +435,9 @@ export default function WalletTracker() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                   <div className="p-4 border-b border-[#E4E4E7]">
-                    <h3 className="text-sm font-['Manrope'] font-semibold">PNL Over Time (24h)</h3>
+                    <h3 className="text-sm font-['Manrope'] font-semibold">
+                      PNL Over Time (24h)
+                    </h3>
                   </div>
                   <div className="p-4">
                     <PnLChart data={chartData.pnlHistory} />
@@ -327,10 +446,13 @@ export default function WalletTracker() {
 
                 <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                   <div className="p-4 border-b border-[#E4E4E7]">
-                    <h3 className="text-sm font-['Manrope'] font-semibold">Position Distribution</h3>
+                    <h3 className="text-sm font-['Manrope'] font-semibold">
+                      Position Distribution
+                    </h3>
                   </div>
                   <div className="p-4">
-                    {Array.isArray(chartData.distribution) && chartData.distribution.length > 0 ? (
+                    {Array.isArray(chartData.distribution) &&
+                    chartData.distribution.length > 0 ? (
                       <PositionDistribution data={chartData.distribution} />
                     ) : (
                       <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
@@ -343,10 +465,13 @@ export default function WalletTracker() {
 
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                 <div className="p-4 border-b border-[#E4E4E7]">
-                  <h3 className="text-sm font-['Manrope'] font-semibold">Buy vs Sell by Market Type</h3>
+                  <h3 className="text-sm font-['Manrope'] font-semibold">
+                    Buy vs Sell by Market Type
+                  </h3>
                 </div>
                 <div className="p-4">
-                  {Array.isArray(chartData.buySell) && chartData.buySell.length > 0 ? (
+                  {Array.isArray(chartData.buySell) &&
+                  chartData.buySell.length > 0 ? (
                     <BuySellComparison data={chartData.buySell} />
                   ) : (
                     <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
@@ -360,47 +485,100 @@ export default function WalletTracker() {
                 <Tabs defaultValue="buying" className="w-full">
                   <div className="p-4 border-b border-[#E4E4E7]">
                     <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-sm">
-                      <TabsTrigger value="buying" className="data-[state=active]:bg-white rounded-sm">
+                      <TabsTrigger
+                        value="buying"
+                        className="data-[state=active]:bg-white rounded-sm"
+                      >
                         <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
-                        {'Buying (' + (Array.isArray(walletDetails.buying_positions) ? walletDetails.buying_positions.length : 0) + ')'}
+                        {'Buying (' +
+                          (Array.isArray(walletDetails.buying_positions)
+                            ? walletDetails.buying_positions.length
+                            : 0) +
+                          ')'}
                       </TabsTrigger>
-                      <TabsTrigger value="selling" className="data-[state=active]:bg-white rounded-sm">
+                      <TabsTrigger
+                        value="selling"
+                        className="data-[state=active]:bg-white rounded-sm"
+                      >
                         <TrendingDown className="w-4 h-4 mr-2 text-red-600" />
-                        {'Selling (' + (Array.isArray(walletDetails.selling_positions) ? walletDetails.selling_positions.length : 0) + ')'}
+                        {'Selling (' +
+                          (Array.isArray(walletDetails.selling_positions)
+                            ? walletDetails.selling_positions.length
+                            : 0) +
+                          ')'}
                       </TabsTrigger>
                     </TabsList>
                   </div>
 
-                  <TabsContent value="buying" className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
-                    {!Array.isArray(walletDetails.buying_positions) || walletDetails.buying_positions.length === 0 ? (
+                  <TabsContent
+                    value="buying"
+                    className="p-4 space-y-3 max-h-[400px] overflow-y-auto"
+                  >
+                    {!Array.isArray(walletDetails.buying_positions) ||
+                    walletDetails.buying_positions.length === 0 ? (
                       <div className="text-center py-8 text-gray-400">
                         <p className="text-sm">No buying positions</p>
                       </div>
                     ) : (
                       walletDetails.buying_positions.map(function (pos, idx) {
                         return (
-                          <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm bg-green-50/30">
-                            <div className="font-semibold text-sm mb-2">{pos.market}</div>
+                          <div
+                            key={idx}
+                            className="p-3 border border-[#E4E4E7] rounded-sm bg-green-50/30"
+                          >
+                            <div className="font-semibold text-sm mb-2">
+                              {pos.market}
+                            </div>
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div>
-                                <span className="text-gray-500">Outcome:</span> <span className="font-semibold">{pos.outcome}</span>
+                                <span className="text-gray-500">Outcome:</span>{' '}
+                                <span className="font-semibold">
+                                  {pos.outcome}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Shares:</span> <span className="font-mono font-semibold">{pos.size}</span>
+                                <span className="text-gray-500">Shares:</span>{' '}
+                                <span className="font-mono font-semibold">
+                                  {pos.size}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Avg Price:</span> <span className="font-mono">{pos.avg_price}</span>
+                                <span className="text-gray-500">
+                                  Avg Price:
+                                </span>{' '}
+                                <span className="font-mono">
+                                  {pos.avg_price}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Current:</span> <span className="font-mono">{pos.current_price}</span>
+                                <span className="text-gray-500">Current:</span>{' '}
+                                <span className="font-mono">
+                                  {pos.current_price}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Value:</span> <span className="font-mono font-semibold">{'$' + (pos.current_value || 0)}</span>
+                                <span className="text-gray-500">Value:</span>{' '}
+                                <span className="font-mono font-semibold">
+                                  {'$' + (pos.current_value || 0)}
+                                </span>
                               </div>
                               <div>
                                 <span className="text-gray-500">PNL:</span>
-                                <span className={'font-mono font-semibold ml-1 ' + ((pos.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                                  {(pos.unrealized_pnl || 0) >= 0 ? '+' : ''}{'$' + (pos.unrealized_pnl || 0) + ' (' + ((pos.pnl_percent || 0) >= 0 ? '+' : '') + (pos.pnl_percent || 0) + '%)'}
+                                <span
+                                  className={
+                                    'font-mono font-semibold ml-1 ' +
+                                    ((pos.unrealized_pnl || 0) >= 0
+                                      ? 'text-green-600'
+                                      : 'text-red-600')
+                                  }
+                                >
+                                  {(pos.unrealized_pnl || 0) >= 0 ? '+' : ''}
+                                  {'$' +
+                                    (pos.unrealized_pnl || 0) +
+                                    ' (' +
+                                    ((pos.pnl_percent || 0) >= 0 ? '+' : '') +
+                                    (pos.pnl_percent || 0) +
+                                    '%)'}
                                 </span>
                               </div>
                             </div>
@@ -410,36 +588,75 @@ export default function WalletTracker() {
                     )}
                   </TabsContent>
 
-                  <TabsContent value="selling" className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
-                    {!Array.isArray(walletDetails.selling_positions) || walletDetails.selling_positions.length === 0 ? (
+                  <TabsContent
+                    value="selling"
+                    className="p-4 space-y-3 max-h-[400px] overflow-y-auto"
+                  >
+                    {!Array.isArray(walletDetails.selling_positions) ||
+                    walletDetails.selling_positions.length === 0 ? (
                       <div className="text-center py-8 text-gray-400">
                         <p className="text-sm">No selling positions</p>
                       </div>
                     ) : (
                       walletDetails.selling_positions.map(function (pos, idx) {
                         return (
-                          <div key={idx} className="p-3 border border-[#E4E4E7] rounded-sm bg-red-50/30">
-                            <div className="font-semibold text-sm mb-2">{pos.market}</div>
+                          <div
+                            key={idx}
+                            className="p-3 border border-[#E4E4E7] rounded-sm bg-red-50/30"
+                          >
+                            <div className="font-semibold text-sm mb-2">
+                              {pos.market}
+                            </div>
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div>
-                                <span className="text-gray-500">Outcome:</span> <span className="font-semibold">{pos.outcome}</span>
+                                <span className="text-gray-500">Outcome:</span>{' '}
+                                <span className="font-semibold">
+                                  {pos.outcome}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Shares:</span> <span className="font-mono font-semibold">{Math.abs(pos.size)}</span>
+                                <span className="text-gray-500">Shares:</span>{' '}
+                                <span className="font-mono font-semibold">
+                                  {Math.abs(pos.size)}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Avg Price:</span> <span className="font-mono">{pos.avg_price}</span>
+                                <span className="text-gray-500">
+                                  Avg Price:
+                                </span>{' '}
+                                <span className="font-mono">
+                                  {pos.avg_price}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Current:</span> <span className="font-mono">{pos.current_price}</span>
+                                <span className="text-gray-500">Current:</span>{' '}
+                                <span className="font-mono">
+                                  {pos.current_price}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Value:</span> <span className="font-mono font-semibold">{'$' + Math.abs(pos.current_value || 0)}</span>
+                                <span className="text-gray-500">Value:</span>{' '}
+                                <span className="font-mono font-semibold">
+                                  {'$' + Math.abs(pos.current_value || 0)}
+                                </span>
                               </div>
                               <div>
                                 <span className="text-gray-500">PNL:</span>
-                                <span className={'font-mono font-semibold ml-1 ' + ((pos.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600')}>
-                                  {(pos.unrealized_pnl || 0) >= 0 ? '+' : ''}{'$' + (pos.unrealized_pnl || 0) + ' (' + ((pos.pnl_percent || 0) >= 0 ? '+' : '') + (pos.pnl_percent || 0) + '%)'}
+                                <span
+                                  className={
+                                    'font-mono font-semibold ml-1 ' +
+                                    ((pos.unrealized_pnl || 0) >= 0
+                                      ? 'text-green-600'
+                                      : 'text-red-600')
+                                  }
+                                >
+                                  {(pos.unrealized_pnl || 0) >= 0 ? '+' : ''}
+                                  {'$' +
+                                    (pos.unrealized_pnl || 0) +
+                                    ' (' +
+                                    ((pos.pnl_percent || 0) >= 0 ? '+' : '') +
+                                    (pos.pnl_percent || 0) +
+                                    '%)'}
                                 </span>
                               </div>
                             </div>
@@ -453,17 +670,23 @@ export default function WalletTracker() {
 
               <Card className="border border-[#E4E4E7] shadow-sm rounded-sm">
                 <div className="p-4 border-b border-[#E4E4E7]">
-                  <h3 className="text-lg font-['Manrope'] font-semibold">Recent Activity</h3>
+                  <h3 className="text-lg font-['Manrope'] font-semibold">
+                    Recent Activity
+                  </h3>
                 </div>
                 <div className="p-4 space-y-2 max-h-[300px] overflow-y-auto">
-                  {!Array.isArray(activityFeed) || activityFeed.length === 0 ? (
+                  {!Array.isArray(activityFeed) ||
+                  activityFeed.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
                       <p className="text-sm">No recent activity</p>
                     </div>
                   ) : (
                     activityFeed.map(function (activity, idx) {
                       return (
-                        <div key={idx} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0">
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2 border-b border-gray-100 last:border-0"
+                        >
                           <div className="flex items-center gap-3">
                             {activity.action === 'BUY' ? (
                               <TrendingUp className="w-4 h-4 text-green-600" />
@@ -471,14 +694,24 @@ export default function WalletTracker() {
                               <TrendingDown className="w-4 h-4 text-red-600" />
                             )}
                             <div>
-                              <div className="text-sm font-semibold">{activity.market}</div>
+                              <div className="text-sm font-semibold">
+                                {activity.market}
+                              </div>
                               <div className="text-xs text-gray-500">
-                                {activity.action + ' ' + activity.shares + ' shares @ ' + activity.price}
+                                {activity.action +
+                                  ' ' +
+                                  activity.shares +
+                                  ' shares @ ' +
+                                  activity.price}
                               </div>
                             </div>
                           </div>
                           <div className="text-xs text-gray-400 font-mono">
-                            {activity.timestamp ? new Date(activity.timestamp).toLocaleTimeString() : '--:--'}
+                            {activity.timestamp
+                              ? new Date(
+                                  activity.timestamp
+                                ).toLocaleTimeString()
+                              : '--:--'}
                           </div>
                         </div>
                       );
