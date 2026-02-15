@@ -158,12 +158,21 @@ export default function Dashboard() {
   const generateSignal = async () => {
     setIsGeneratingSignal(true);
     try {
-      await axios.post(`${API}/signals/generate`);
-      toast.success('Signal generated successfully');
+      const response = await axios.post(`${API}/signals/generate`);
+      if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
+        toast.info('Waiting for data -- no signal available yet');
+      } else {
+        toast.success('Signal generated successfully');
+      }
       fetchSignals();
     } catch (error) {
       console.error('Error generating signal:', error);
-      toast.error('Failed to generate signal');
+      const status = error?.response?.status;
+      if (status === 503 || status === 504) {
+        toast.info('Waiting for data -- signal service is starting up');
+      } else {
+        toast.error('Could not generate signal. Please try again.');
+      }
     } finally {
       setIsGeneratingSignal(false);
     }

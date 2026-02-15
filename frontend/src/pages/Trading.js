@@ -23,6 +23,10 @@ export default function Trading() {
   const [openOrders, setOpenOrders] = useState([]);
   const [tradeHistory, setTradeHistory] = useState([]);
 
+  /* ------------------------------------------------------------------ */
+  /*  Data fetching (all useCallback, all with Array.isArray guards)     */
+  /* ------------------------------------------------------------------ */
+
   const checkTradingStatus = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/trading/status`);
@@ -63,6 +67,10 @@ export default function Trading() {
     }
   }, []);
 
+  /* ------------------------------------------------------------------ */
+  /*  Effects                                                            */
+  /* ------------------------------------------------------------------ */
+
   useEffect(() => {
     checkTradingStatus();
   }, [checkTradingStatus]);
@@ -80,7 +88,10 @@ export default function Trading() {
     }
   }, [isConnected, fetchPositions, fetchOpenOrders, fetchTradeHistory]);
 
-  // toggleAutoTrading is a self-contained handler
+  /* ------------------------------------------------------------------ */
+  /*  toggleAutoTrading – self-contained handler, nothing else inside    */
+  /* ------------------------------------------------------------------ */
+
   const toggleAutoTrading = () => {
     if (!isConnected) {
       toast.error('Please connect your Polymarket account first');
@@ -90,26 +101,30 @@ export default function Trading() {
     toast.success(autoTradingEnabled ? 'Auto-trading disabled' : 'Auto-trading enabled');
   };
 
-  // Generate chart data for trading performance (component scope, single declaration)
+  /* ------------------------------------------------------------------ */
+  /*  Chart data generator (component scope, NOT inside any handler)     */
+  /* ------------------------------------------------------------------ */
+
   const generateTradingChartData = () => {
     const safePositions = Array.isArray(positions) ? positions : [];
     const safeHistory = Array.isArray(tradeHistory) ? tradeHistory : [];
 
+    // Simulated 24-hour PNL curve
     const pnlHistory = [];
     let cumulativePnl = 0;
-
     for (let i = 0; i < 24; i++) {
       const time = new Date(Date.now() - (23 - i) * 3600000);
       cumulativePnl += Math.random() * 10 - 4;
       pnlHistory.push({
         time: `${time.getHours()}:00`,
-        pnl: parseFloat(cumulativePnl.toFixed(2))
+        pnl: parseFloat(cumulativePnl.toFixed(2)),
       });
     }
 
+    // Aggregate metrics
     const totalValue = safePositions.reduce((sum, p) => sum + (p.currentValue || 0), 0);
     const totalPnl = safePositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-    const winningTrades = safeHistory.filter(t => t.pnl && t.pnl > 0).length;
+    const winningTrades = safeHistory.filter((t) => t.pnl && t.pnl > 0).length;
     const totalTrades = safeHistory.length;
 
     const metrics = {
@@ -118,16 +133,30 @@ export default function Trading() {
       winRate: totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0,
       avgReturn: totalValue > 0 ? (totalPnl / totalValue) * 100 : 0,
       totalTrades,
-      bestTrade: safeHistory.length > 0 ? Math.max(...safeHistory.map(t => t.pnl || 0), 0) : 0,
-      worstTrade: safeHistory.length > 0 ? Math.min(...safeHistory.map(t => t.pnl || 0), 0) : 0
+      bestTrade: safeHistory.length > 0 ? Math.max(...safeHistory.map((t) => t.pnl || 0)) : 0,
+      worstTrade: safeHistory.length > 0 ? Math.min(...safeHistory.map((t) => t.pnl || 0)) : 0,
     };
 
     return { pnlHistory, metrics };
   };
 
-  // Single declaration of tradingChartData at component scope
-  const defaultMetrics = { totalValue: 0, totalPnl: 0, winRate: 0, avgReturn: 0, totalTrades: 0, bestTrade: 0, worstTrade: 0 };
-  const tradingChartData = isConnected ? generateTradingChartData() : { pnlHistory: [], metrics: defaultMetrics };
+  /* --- SINGLE declaration of tradingChartData at component scope --- */
+  const defaultMetrics = {
+    totalValue: 0,
+    totalPnl: 0,
+    winRate: 0,
+    avgReturn: 0,
+    totalTrades: 0,
+    bestTrade: 0,
+    worstTrade: 0,
+  };
+  const tradingChartData = isConnected
+    ? generateTradingChartData()
+    : { pnlHistory: [], metrics: defaultMetrics };
+
+  /* ------------------------------------------------------------------ */
+  /*  Render                                                             */
+  /* ------------------------------------------------------------------ */
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
@@ -145,7 +174,7 @@ export default function Trading() {
                 Go to Settings to configure your account credentials.
               </p>
               <Button
-                onClick={() => window.location.href = '/settings'}
+                onClick={() => (window.location.href = '/settings')}
                 className="bg-black text-white hover:bg-gray-800 rounded-sm px-6 py-3"
               >
                 Go to Settings
@@ -153,7 +182,7 @@ export default function Trading() {
             </div>
           </Card>
 
-          {/* Preview/Demo Section */}
+          {/* Preview / Demo Section */}
           <Card className="border-2 border-blue-500 shadow-lg rounded-sm">
             <div className="p-6 bg-blue-50 border-b border-blue-200">
               <div className="flex items-center gap-3 mb-2">
@@ -161,10 +190,10 @@ export default function Trading() {
                 <h2 className="text-xl font-['Manrope'] font-bold">Preview: Auto-Trading Features</h2>
               </div>
               <p className="text-sm text-blue-800">
-                This is what you'll see after connecting your account. Connect now to unlock automated trading!
+                This is what you will see after connecting your account. Connect now to unlock automated trading!
               </p>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Demo Auto-Trading Control */}
               <div className="p-4 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
@@ -249,7 +278,7 @@ export default function Trading() {
 
               <div className="text-center pt-4">
                 <Button
-                  onClick={() => window.location.href = '/settings'}
+                  onClick={() => (window.location.href = '/settings')}
                   size="lg"
                   className="bg-blue-600 text-white hover:bg-blue-700 rounded-sm px-8 py-4 text-base font-semibold"
                 >
@@ -267,9 +296,7 @@ export default function Trading() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-['Manrope'] font-bold mb-1">Auto-Trading</h2>
-                  <p className="text-sm text-gray-600">
-                    Automatically execute trades based on AI signals
-                  </p>
+                  <p className="text-sm text-gray-600">Automatically execute trades based on AI signals</p>
                   <p className="text-xs text-gray-400 font-mono mt-1">
                     Connected: {userAddress.substring(0, 6)}...{userAddress.substring(userAddress.length - 4)}
                   </p>
@@ -377,11 +404,7 @@ export default function Trading() {
                           {order.size} @ ${order.price}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50"
-                      >
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50">
                         Cancel
                       </Button>
                     </div>
