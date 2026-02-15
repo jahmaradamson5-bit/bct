@@ -172,6 +172,7 @@ export default function Dashboard() {
   };
 
   const generateSignal = async () => {
+    console.log("RELOADING_SIGNAL_ENGINE_v2");
     setIsGeneratingSignal(true);
     try {
       const response = await axios.post(`${API}/signals/generate`);
