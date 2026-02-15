@@ -35,7 +35,7 @@ export default function WalletTracker() {
   const [newWalletLabel, setNewWalletLabel] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Generate chart data from wallet details
+  // Generate chart data from wallet details (safe against null/undefined)
   const generateChartData = () => {
     const emptyResult = { pnlHistory: [], distribution: [], buySell: [], metrics: {} };
     if (!walletDetails || typeof walletDetails !== 'object') return emptyResult;

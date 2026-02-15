@@ -14,7 +14,7 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-export default function BuySellComparison({ data }) {
+export default function BuySellComparison({ data = [] }) {
   const safeData = Array.isArray(data) ? data : [];
 
   if (safeData.length === 0) {

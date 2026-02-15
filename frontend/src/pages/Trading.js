@@ -90,7 +90,7 @@ export default function Trading() {
     toast.success(autoTradingEnabled ? 'Auto-trading disabled' : 'Auto-trading enabled');
   };
 
-  // Chart data generator at component scope so JSX can reference it
+  // Generate chart data for trading performance (component scope, single declaration)
   const generateTradingChartData = () => {
     const safePositions = Array.isArray(positions) ? positions : [];
     const safeHistory = Array.isArray(tradeHistory) ? tradeHistory : [];
