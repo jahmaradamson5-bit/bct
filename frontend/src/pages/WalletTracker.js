@@ -16,7 +16,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL && process.env.REACT_APP_B
   : '';
 const API = `${BACKEND_URL}/api`;
 
-/** Safely coerce any API response into an array. */
+/** Safely coerce any API response into an array */
 const toSafeArray = (data) => {
   if (Array.isArray(data)) return data;
   if (data && typeof data === 'object') {
